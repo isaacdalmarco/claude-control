@@ -140,8 +140,7 @@ async function buildSession(
 
   // Recent user activity overrides orphan detection — if the session had
   // input within the last 60s it's clearly not abandoned.
-  const recentActivity =
-    mtime !== null && Date.now() - mtime.getTime() < 60_000;
+  const recentActivity = mtime !== null && Date.now() - mtime.getTime() < 60_000;
 
   return {
     id: sessionId,
