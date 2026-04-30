@@ -74,12 +74,21 @@ async function fetchPrStatus(prUrl: string, cwd: string): Promise<PrStatus | nul
     let pending = 0;
 
     for (const check of rollup) {
-      if (check.conclusion === "SUCCESS" || check.state === "SUCCESS") {
+      // SKIPPED and NEUTRAL are terminal states — treat as done so the
+      // pending spinner doesn't hang when path filters skip half the matrix.
+      if (
+        check.conclusion === "SUCCESS" ||
+        check.conclusion === "SKIPPED" ||
+        check.conclusion === "NEUTRAL" ||
+        check.state === "SUCCESS"
+      ) {
         passing++;
       } else if (
         check.conclusion === "FAILURE" ||
         check.conclusion === "TIMED_OUT" ||
         check.conclusion === "CANCELLED" ||
+        check.conclusion === "ACTION_REQUIRED" ||
+        check.conclusion === "STARTUP_FAILURE" ||
         check.state === "FAILURE" ||
         check.state === "ERROR"
       ) {

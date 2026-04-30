@@ -20,13 +20,7 @@ execSync(`cp -RL "${standaloneDir}" "${outDir}"`, { stdio: "inherit" });
 
 // Next.js standalone copies the entire project root — strip everything the
 // runtime server doesn't need (build artifacts, source, configs, dist/).
-const KEEP_TOP_LEVEL = new Set([
-  "server.js",
-  "node_modules",
-  ".next",
-  "public",
-  "package.json",
-]);
+const KEEP_TOP_LEVEL = new Set(["server.js", "node_modules", ".next", "public", "package.json"]);
 for (const entry of fs.readdirSync(outDir)) {
   if (!KEEP_TOP_LEVEL.has(entry)) {
     fs.rmSync(path.join(outDir, entry), { recursive: true });
