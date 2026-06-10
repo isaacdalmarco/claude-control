@@ -158,14 +158,10 @@ function stripXmlTags(text: string): string | null {
  * Returns null for turns with no text blocks (e.g. tool_result-only messages),
  * which should not be surfaced as user input.
  */
-function userMessageText(
-  content: string | Array<{ type: string; text?: string }> | undefined,
-): string | null {
+function userMessageText(content: string | Array<{ type: string; text?: string }> | undefined): string | null {
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {
-    const texts = content
-      .filter((b) => b.type === "text" && typeof b.text === "string")
-      .map((b) => b.text as string);
+    const texts = content.filter((b) => b.type === "text" && typeof b.text === "string").map((b) => b.text as string);
     return texts.length > 0 ? texts.join("\n") : null;
   }
   return null;
