@@ -67,7 +67,7 @@ export default function Dashboard() {
   }, []);
 
   const handleSaveMeta = useCallback(
-    async (sessionId: string, updates: { title?: string; description?: string }) => {
+    async (sessionId: string, updates: { title: string | null; description: string | null }) => {
       try {
         await fetch(`/api/sessions/${sessionId}/meta`, {
           method: "PUT",

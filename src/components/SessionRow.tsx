@@ -1,7 +1,7 @@
 "use client";
 
 import { ClaudeSession, PrStatus, SessionStatus, statusLabels } from "@/lib/types";
-import { PrStatusBadge } from "./PrStatusBadge";
+import { prLabel, PrStatusBadge } from "./PrStatusBadge";
 
 const statusColors: Record<SessionStatus, { dot: string; text: string }> = {
   working: { dot: "bg-emerald-500", text: "text-emerald-400" },
@@ -15,7 +15,7 @@ export function SessionRow({
   session,
   selected,
   shortcutNumber,
-  prStatus,
+  prStatuses,
   onSelect,
   displayStatus,
   isStale,
@@ -24,7 +24,7 @@ export function SessionRow({
   session: ClaudeSession;
   selected?: boolean;
   shortcutNumber?: number;
-  prStatus?: PrStatus | null;
+  prStatuses?: Record<string, PrStatus | null>;
   onSelect?: () => void;
   displayStatus: SessionStatus;
   isStale?: boolean;
@@ -107,10 +107,15 @@ export function SessionRow({
         </div>
       )}
 
-      {/* PR status */}
-      {prStatus && (
-        <div className="shrink-0">
-          <PrStatusBadge pr={prStatus} />
+      {/* PR status — one badge per PR the session owns */}
+      {session.prs.length > 0 && (
+        <div className="shrink-0 flex items-center gap-1.5">
+          {session.prs.map((url) => {
+            const pr = prStatuses?.[url];
+            return pr ? (
+              <PrStatusBadge key={url} pr={pr} label={session.prs.length > 1 ? prLabel(url) : undefined} />
+            ) : null;
+          })}
         </div>
       )}
 
