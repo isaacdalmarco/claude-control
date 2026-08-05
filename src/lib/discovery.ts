@@ -4,6 +4,7 @@ import { ORPHAN_CHECK_INTERVAL_MS } from "./constants";
 import { getGitDiff, getGitSummary, getMainWorktreePath, getPrUrl } from "./git-info";
 import { type HookStatus, readAllHookStatuses } from "./hooks-reader";
 import { repoNameFromPath, workingDirToProjectDir } from "./paths";
+import { getOwnedPrUrls } from "./pr-discovery";
 import { getAllProcessInfos, ProcessInfo } from "./process-utils";
 import { loadSessionMeta } from "./session-meta";
 import {
@@ -31,6 +32,7 @@ import {
   getTtysForPids,
   isOrphaned,
 } from "./terminal/detect";
+import { getTabTitles } from "./terminal/tab-titles";
 import { ClaudeSession, ConversationPreview, SessionDetail } from "./types";
 
 async function findLatestJsonl(projectDir: string, excludePaths?: Set<string>): Promise<string | null> {
@@ -62,6 +64,7 @@ async function findLatestJsonl(projectDir: string, excludePaths?: Set<string>): 
 let lastOrphanCheck = 0;
 let orphanedPids = new Set<number>();
 let pidTmuxSession = new Map<number, string>();
+let pidTty = new Map<number, string>();
 
 async function buildSession(
   info: ProcessInfo,
@@ -69,6 +72,7 @@ async function buildSession(
   claimedPaths: Set<string>,
   orphaned: boolean,
   tmuxSession: string | null,
+  tabTitle: string | null,
 ): Promise<ClaudeSession | null> {
   if (!info.workingDirectory) return null;
 
@@ -114,9 +118,28 @@ async function buildSession(
     if (mtime) lastActivity = mtime.toISOString();
   }
 
+  // Claude Code retitles the terminal tab as the task evolves — a better label
+  // than the opening prompt. Ticket metadata still comes from the transcript.
+  if (tabTitle) {
+    taskSummary = {
+      title: tabTitle,
+      description: taskSummary?.description ?? null,
+      source: "terminal",
+      ticketId: taskSummary?.ticketId ?? null,
+      ticketUrl: taskSummary?.ticketUrl ?? null,
+    };
+  }
+
   const resolvedBranch = git?.branch ?? branch;
-  const skipPrLookup = !resolvedBranch || resolvedBranch === "main" || resolvedBranch === "master";
-  const prUrl = skipPrLookup ? null : await getPrUrl(info.workingDirectory, resolvedBranch);
+
+  // PRs the session itself created or was told to shepherd identify it; the
+  // checked-out branch's PR does not — every session sharing a repo resolves to
+  // the same one. Fall back to the branch PR only when the transcript has none.
+  const ownedPrs = jsonlPath ? await getOwnedPrUrls(jsonlPath) : [];
+  const skipPrLookup =
+    ownedPrs.length > 0 || !resolvedBranch || resolvedBranch === "main" || resolvedBranch === "master";
+  const branchPr = skipPrLookup ? null : await getPrUrl(info.workingDirectory, resolvedBranch);
+  const prs = ownedPrs.length > 0 ? ownedPrs : branchPr ? [branchPr] : [];
 
   const isWorktree = mainWorktreePath !== null && mainWorktreePath !== info.workingDirectory;
   const parentRepo = isWorktree ? mainWorktreePath : null;
@@ -158,7 +181,8 @@ async function buildSession(
     hasPendingToolUse: pendingToolUse,
     taskSummary,
     jsonlPath,
-    prUrl,
+    prUrl: prs[0] ?? null,
+    prs,
     orphaned: recentActivity ? false : orphaned,
     tmuxSession,
   };
@@ -206,7 +230,10 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
     }
     orphanedPids = newOrphaned;
     pidTmuxSession = newPidTmuxSession;
+    pidTty = ttyMap;
   }
+
+  const tabTitles = await getTabTitles();
 
   // Collect transcript paths claimed by hook events so fallback doesn't reuse them
   const claimedPaths = new Set<string>();
@@ -226,6 +253,7 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
           claimedPaths,
           orphanedPids.has(info.pid),
           pidTmuxSession.get(info.pid) ?? null,
+          tabTitles.get(pidTty.get(info.pid) ?? "") ?? null,
         ),
       ),
   );

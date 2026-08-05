@@ -26,7 +26,10 @@ export interface ClaudeSession {
   taskSummary: TaskSummary | null;
   hasPendingToolUse: boolean;
   jsonlPath: string | null;
+  /** Primary PR — first entry of `prs`, kept for single-PR quick actions. */
   prUrl: string | null;
+  /** Every PR this session owns: created, shepherded, or on its checked-out branch. */
+  prs: string[];
   orphaned: boolean;
   tmuxSession: string | null;
 }
@@ -59,7 +62,7 @@ export interface ConversationPreview {
 export interface TaskSummary {
   title: string;
   description: string | null;
-  source: "linear" | "prompt" | "user";
+  source: "linear" | "prompt" | "user" | "terminal";
   ticketId: string | null;
   ticketUrl: string | null;
 }

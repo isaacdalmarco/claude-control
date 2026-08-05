@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ClaudeSession, PrStatus, SessionStatus } from "@/lib/types";
 import { GitSummary } from "./GitSummary";
 import { OutputPreview } from "./OutputPreview";
-import { PrStatusBadge } from "./PrStatusBadge";
+import { prLabel, PrStatusBadge } from "./PrStatusBadge";
 import { QuickActions } from "./QuickActions";
 import { QuickReply } from "./QuickReply";
 import { StatusBadge } from "./StatusBadge";
@@ -56,7 +56,7 @@ export function SessionCard({
   selected,
   shortcutNumber,
   actionFeedback,
-  prStatus,
+  prStatuses,
   isStale,
   onSelect,
   actedOn,
@@ -72,14 +72,14 @@ export function SessionCard({
   selected?: boolean;
   shortcutNumber?: number;
   actionFeedback?: { label: string; color: string } | null;
-  prStatus?: PrStatus | null;
+  prStatuses?: Record<string, PrStatus | null>;
   isStale?: boolean;
   onSelect?: () => void;
   actedOn?: { action: "approve" | "reject"; at: number };
   onApproveReject?: (action: "approve" | "reject") => void;
   editing?: boolean;
   onStartEdit?: () => void;
-  onSaveMeta?: (updates: { title?: string; description?: string }) => void;
+  onSaveMeta?: (updates: { title: string | null; description: string | null }) => void;
   onCancelEdit?: () => void;
 }) {
   const isSuppressed = !!actedOn;
@@ -212,10 +212,15 @@ export function SessionCard({
           </div>
 
           {/* Git info + PR status */}
-          {(session.git || prStatus) && (
+          {(session.git || session.prs.length > 0) && (
             <div className="mb-3 flex items-center gap-2 flex-wrap">
               {session.git && <GitSummary git={session.git} />}
-              {prStatus && <PrStatusBadge pr={prStatus} />}
+              {session.prs.map((url) => {
+                const pr = prStatuses?.[url];
+                return pr ? (
+                  <PrStatusBadge key={url} pr={pr} label={session.prs.length > 1 ? prLabel(url) : undefined} />
+                ) : null;
+              })}
             </div>
           )}
 
@@ -242,7 +247,16 @@ export function SessionCard({
             ) : session.taskSummary ? (
               <TaskSummaryView task={session.taskSummary} onStartEdit={onStartEdit} />
             ) : (
-              <OutputPreview preview={session.preview} status={session.status} />
+              <div
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onStartEdit?.();
+                }}
+                title="Double-click to name this session"
+              >
+                <OutputPreview preview={session.preview} status={session.status} />
+              </div>
             )}
           </div>
 

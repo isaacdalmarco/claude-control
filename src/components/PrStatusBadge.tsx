@@ -37,7 +37,22 @@ function overallColor(pr: PrStatus): string {
   return "zinc";
 }
 
-export function PrStatusBadge({ pr }: { pr: PrStatus }) {
+export function prLabel(url: string): string {
+  const match = url.match(/github\.com\/[^/]+\/([^/]+)\/pull\/(\d+)/);
+  return match ? `${match[1]}#${match[2]}` : url;
+}
+
+function openPr(e: React.MouseEvent, url: string) {
+  e.preventDefault();
+  e.stopPropagation();
+  fetch("/api/actions/open", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "open-url", url }),
+  }).catch(() => window.open(url, "_blank"));
+}
+
+export function PrStatusBadge({ pr, label }: { pr: PrStatus; label?: string }) {
   const color = overallColor(pr);
 
   const borderColors: Record<string, string> = {
@@ -52,7 +67,8 @@ export function PrStatusBadge({ pr }: { pr: PrStatus }) {
   if (pr.state === "MERGED") {
     return (
       <div
-        className={`has-tooltip inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] ${borderColors.purple}`}
+        onClick={(e) => openPr(e, pr.url)}
+        className={`has-tooltip inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] cursor-pointer ${borderColors.purple}`}
         data-tip="PR merged"
       >
         <svg className="w-3 h-3 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -62,7 +78,7 @@ export function PrStatusBadge({ pr }: { pr: PrStatus }) {
             d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
           />
         </svg>
-        <span className="font-medium text-violet-400">Merged</span>
+        <span className="font-medium text-violet-400">{label ?? "Merged"}</span>
       </div>
     );
   }
@@ -70,13 +86,14 @@ export function PrStatusBadge({ pr }: { pr: PrStatus }) {
   if (pr.state === "CLOSED") {
     return (
       <div
-        className={`has-tooltip inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] ${borderColors.red}`}
+        onClick={(e) => openPr(e, pr.url)}
+        className={`has-tooltip inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] cursor-pointer ${borderColors.red}`}
         data-tip="PR closed"
       >
         <svg className="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
-        <span className="font-medium text-red-400">Closed</span>
+        <span className="font-medium text-red-400">{label ?? "Closed"}</span>
       </div>
     );
   }
@@ -175,11 +192,20 @@ export function PrStatusBadge({ pr }: { pr: PrStatus }) {
     );
   }
 
-  if (items.length === 0) return null;
+  if (items.length === 0 && !label) return null;
+
+  if (label) {
+    items.unshift(
+      <span key="label" className="font-mono font-medium text-zinc-400">
+        {label}
+      </span>,
+    );
+  }
 
   return (
     <div
-      className={`has-tooltip inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] ${borderColors[color] || borderColors.zinc}`}
+      onClick={(e) => openPr(e, pr.url)}
+      className={`has-tooltip inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] cursor-pointer ${borderColors[color] || borderColors.zinc}`}
       data-tip={checksTooltip(pr)}
     >
       {items.map((item, i) => (

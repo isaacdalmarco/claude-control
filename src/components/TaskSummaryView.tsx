@@ -6,7 +6,7 @@ import { TaskSummary } from "@/lib/types";
 interface TaskSummaryViewProps {
   task: TaskSummary;
   editing?: boolean;
-  onSave?: (updates: { title?: string; description?: string }) => void;
+  onSave?: (updates: { title: string | null; description: string | null }) => void;
   onCancel?: () => void;
   onStartEdit?: () => void;
 }
@@ -38,9 +38,11 @@ export function TaskSummaryView({ task, editing, onSave, onCancel, onStartEdit }
   };
 
   const handleSave = () => {
+    // null clears the override — undefined is dropped by JSON.stringify, which
+    // turned "empty the field" into a no-op instead of a reset to the auto title.
     onSave?.({
-      title: title.trim() || undefined,
-      description: description.trim() || undefined,
+      title: title.trim() || null,
+      description: description.trim() || null,
     });
   };
 

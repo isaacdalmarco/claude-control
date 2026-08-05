@@ -127,7 +127,7 @@ export function SessionGrid({
   onApproveReject?: (sessionId: string, action: "approve" | "reject") => void;
   editingSessionId?: string | null;
   onStartEdit?: (sessionId: string) => void;
-  onSaveMeta?: (sessionId: string, updates: { title?: string; description?: string }) => void;
+  onSaveMeta?: (sessionId: string, updates: { title: string | null; description: string | null }) => void;
   onCancelEdit?: () => void;
 }) {
   if (sessions.length === 0) {
@@ -203,7 +203,7 @@ export function SessionGrid({
         selected={isSelected}
         shortcutNumber={idx < 9 ? idx + 1 : undefined}
         actionFeedback={isSelected ? actionFeedback : undefined}
-        prStatus={session.prUrl ? (prStatuses?.[session.prUrl] ?? undefined) : undefined}
+        prStatuses={prStatuses}
         isStale={stale}
         onSelect={() => onSelectIndex?.(isSelected ? null : idx)}
         actedOn={actedSessions?.[session.id]}
@@ -225,7 +225,7 @@ export function SessionGrid({
         session={session}
         selected={isSelected}
         shortcutNumber={idx < 9 ? idx + 1 : undefined}
-        prStatus={session.prUrl ? (prStatuses?.[session.prUrl] ?? undefined) : undefined}
+        prStatuses={prStatuses}
         isStale={stale}
         onSelect={() => onSelectIndex?.(isSelected ? null : idx)}
         displayStatus={displayStatus}
