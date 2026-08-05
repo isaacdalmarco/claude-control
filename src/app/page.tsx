@@ -26,9 +26,9 @@ export default function Dashboard() {
   const [freshlyChanged, setFreshlyChanged] = useState<Set<string>>(new Set());
   const [modal, setModal] = useState<{ repoPath?: string; repoName?: string } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    if (typeof window === "undefined") return "grid";
+    if (typeof window === "undefined") return "list";
     const saved = localStorage.getItem("viewMode");
-    return saved === "grid" || saved === "list" ? saved : "grid";
+    return saved === "grid" || saved === "list" ? saved : "list";
   });
   const [showKeyboardHints, setShowKeyboardHints] = useState(() => {
     if (typeof window === "undefined") return true;
