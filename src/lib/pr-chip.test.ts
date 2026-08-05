@@ -30,8 +30,13 @@ describe("aggregatePrChip", () => {
     expect(aggregatePrChip([pr({ state: "MERGED" }), pr({ state: "OPEN" })])?.label).toBe("Open");
   });
 
-  it("falls back to the leading PR's own state", () => {
-    expect(aggregatePrChip([pr({ state: "CLOSED" }), pr({ state: "MERGED" })])?.label).toBe("Closed");
+  it("skips closed PRs when picking the one to speak for the session", () => {
+    expect(aggregatePrChip([pr({ state: "CLOSED" }), pr({ state: "MERGED" })])?.label).toBe("Merged");
+  });
+
+  it("shows Closed only when the session has a single, closed PR", () => {
+    expect(aggregatePrChip([pr({ state: "CLOSED" })])?.label).toBe("Closed");
+    expect(aggregatePrChip([pr({ state: "CLOSED" }), pr({ state: "CLOSED" })])).toBeNull();
   });
 
   it("ignores PRs whose status has not loaded, and yields nothing when none have", () => {

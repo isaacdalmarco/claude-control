@@ -8,15 +8,19 @@ export interface PrChip {
 }
 
 /**
- * One chip for a session's whole set of PRs: done when they all are, otherwise
- * whether anything is still open, and failing both the leading PR's own state.
+ * One chip for a session's whole set of PRs: anything still open outranks the
+ * rest, then the first PR that wasn't abandoned. Closed only speaks for the
+ * session when it is the session's only PR.
  */
 export function aggregatePrChip(prs: (PrStatus | null | undefined)[]): PrChip | null {
   const known = prs.filter((pr): pr is PrStatus => !!pr);
   if (known.length === 0) return null;
-  if (known.every((pr) => pr.state === "MERGED")) return { label: "Merged", tone: "purple" };
   if (known.some((pr) => pr.state === "OPEN")) return { label: "Open", tone: "green" };
-  return prStateChip(known[0]);
+
+  const leading = known.find((pr) => pr.state !== "CLOSED");
+  if (leading) return prStateChip(leading);
+
+  return known.length === 1 ? prStateChip(known[0]) : null;
 }
 
 /** The line you paste in #eng to ask for a review. */
