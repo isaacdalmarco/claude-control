@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { prStateChip } from "./pr-chip";
+import { approvalMessage, prStateChip } from "./pr-chip";
 import { PrStatus } from "./types";
 
 function pr(overrides: Partial<PrStatus>): PrStatus {
@@ -20,6 +20,23 @@ function pr(overrides: Partial<PrStatus>): PrStatus {
     ...overrides,
   };
 }
+
+describe("approvalMessage", () => {
+  it("drops the scheme and joins the title with a dash", () => {
+    expect(
+      approvalMessage(
+        "https://github.com/Authentic-Wallet/consolidated-dashboard/pull/752",
+        "fix(chat): scope call-event placement to payload.call_id",
+      ),
+    ).toBe(
+      "@eng github.com/Authentic-Wallet/consolidated-dashboard/pull/752 - fix(chat): scope call-event placement to payload.call_id",
+    );
+  });
+
+  it("omits the dash when the title is unknown", () => {
+    expect(approvalMessage("https://github.com/acme/api/pull/1", null)).toBe("@eng github.com/acme/api/pull/1");
+  });
+});
 
 describe("prStateChip", () => {
   it("reports lifecycle before review state", () => {

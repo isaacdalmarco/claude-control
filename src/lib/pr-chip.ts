@@ -7,6 +7,12 @@ export interface PrChip {
   tone: ChipTone;
 }
 
+/** The line you paste in #eng to ask for a review. */
+export function approvalMessage(url: string, title: string | null | undefined): string {
+  const bare = url.replace(/^https?:\/\//, "");
+  return title ? `@eng ${bare} - ${title}` : `@eng ${bare}`;
+}
+
 /**
  * The status chip GitHub puts on a PR: lifecycle first, then where review stands.
  */
