@@ -29,6 +29,7 @@ export function SessionRow({
   onStartEdit,
   onSaveMeta,
   onCancelEdit,
+  onReorder,
 }: {
   session: ClaudeSession;
   selected?: boolean;
@@ -42,11 +43,13 @@ export function SessionRow({
   onStartEdit?: () => void;
   onSaveMeta?: (updates: { title?: string | null; description?: string | null }) => void;
   onCancelEdit?: () => void;
+  onReorder?: (draggedId: string, targetId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [prevSelected, setPrevSelected] = useState(selected);
   const [draft, setDraft] = useState("");
   const [killing, setKilling] = useState(false);
+  const [dropTarget, setDropTarget] = useState(false);
   const [prevEditing, setPrevEditing] = useState(editing);
 
   // Seed the input from whatever the row currently shows when editing opens.
@@ -82,12 +85,45 @@ export function SessionRow({
     <div>
       <div
         onClick={onSelect}
+        draggable={!!onReorder}
+        onDragStart={(e) => {
+          e.dataTransfer.setData("text/plain", session.id);
+          e.dataTransfer.effectAllowed = "move";
+        }}
+        onDragOver={(e) => {
+          if (!onReorder) return;
+          e.preventDefault();
+          setDropTarget(true);
+        }}
+        onDragLeave={() => setDropTarget(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDropTarget(false);
+          const draggedId = e.dataTransfer.getData("text/plain");
+          if (draggedId && draggedId !== session.id) onReorder?.(draggedId, session.id);
+        }}
         className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-100 ${
           selected
             ? "bg-blue-500/8 border border-blue-400/30 shadow-[0_0_20px_rgba(96,165,250,0.1)]"
             : "bg-white/2 border border-transparent hover:bg-white/4 hover:border-white/6"
-        } ${isStale && !selected ? "opacity-55 hover:opacity-100" : ""}`}
+        } ${dropTarget ? "border-blue-400/50 bg-blue-500/5" : ""} ${isStale && !selected ? "opacity-55 hover:opacity-100" : ""}`}
       >
+        {onReorder && (
+          <span
+            className="has-tooltip shrink-0 text-zinc-800 group-hover:text-zinc-600 cursor-grab active:cursor-grabbing transition-colors"
+            data-tip="Drag to reorder"
+          >
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="9" cy="6" r="1.6" />
+              <circle cx="15" cy="6" r="1.6" />
+              <circle cx="9" cy="12" r="1.6" />
+              <circle cx="15" cy="12" r="1.6" />
+              <circle cx="9" cy="18" r="1.6" />
+              <circle cx="15" cy="18" r="1.6" />
+            </svg>
+          </span>
+        )}
+
         {/* Shortcut number */}
         {shortcutNumber !== undefined && (
           <span
@@ -155,17 +191,28 @@ export function SessionRow({
                   </button>
                 </span>
               ) : (
-                <span
-                  onDoubleClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onStartEdit?.();
-                  }}
-                  title="Double-click to rename"
-                  className="text-sm text-zinc-200 font-medium truncate"
-                >
-                  {session.taskSummary?.title || repoLabel}
-                </span>
+                <>
+                  <span className="text-sm text-zinc-200 font-medium truncate">
+                    {session.taskSummary?.title || repoLabel}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onStartEdit?.();
+                    }}
+                    className="has-tooltip shrink-0 text-zinc-700 hover:text-zinc-300 opacity-0 group-hover:opacity-100 transition-all"
+                    data-tip="Rename"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"
+                      />
+                    </svg>
+                  </button>
+                </>
               )}
               {ticketId && <LinearChip ticketId={ticketId} url={session.taskSummary?.ticketUrl} />}
               {prChip && <StateChip chip={prChip} />}
@@ -185,6 +232,17 @@ export function SessionRow({
             </span>
           </div>
         </div>
+
+        {(session.teammates.length > 0 || session.prs.length > 0) && (
+          <span className="shrink-0 text-[10px] text-zinc-600">
+            {[
+              session.teammates.length > 0 ? `${session.teammates.length} teammates` : null,
+              session.prs.length > 0 ? `${session.prs.length} PRs` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>
+        )}
 
         {session.pid && (
           <button
@@ -242,33 +300,6 @@ export function SessionRow({
           </button>
         )}
 
-        {/* Teammates + PRs, expandable beneath the row */}
-        {(session.teammates.length > 0 || session.prs.length > 0) && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpanded(!expanded);
-            }}
-            className="shrink-0 flex items-center gap-1 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors"
-          >
-            <svg
-              className={`w-3 h-3 transition-transform ${expanded ? "rotate-90" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
-            {[
-              session.teammates.length > 0 ? `${session.teammates.length} teammates` : null,
-              session.prs.length > 0 ? `${session.prs.length} PRs` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </button>
-        )}
-
         {/* Pending tool context + Approve/Reject for waiting sessions */}
         {isWaiting && session.hasPendingToolUse && onApproveReject && (
           <div className="shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -303,6 +334,28 @@ export function SessionRow({
               </svg>
             </button>
           </div>
+        )}
+
+        {/* Expand — last thing on the row, nothing to its right */}
+        {(session.teammates.length > 0 || session.prs.length > 0) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(!expanded);
+            }}
+            className="shrink-0 text-zinc-600 hover:text-zinc-300 transition-colors"
+            data-tip="Details"
+          >
+            <svg
+              className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-90" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </button>
         )}
       </div>
 

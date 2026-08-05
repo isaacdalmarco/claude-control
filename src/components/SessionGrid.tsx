@@ -112,6 +112,7 @@ export function SessionGrid({
   onStartEdit,
   onSaveMeta,
   onCancelEdit,
+  onReorder,
 }: {
   sessions: ClaudeSession[];
   viewMode: ViewMode;
@@ -129,6 +130,7 @@ export function SessionGrid({
   onStartEdit?: (sessionId: string) => void;
   onSaveMeta?: (sessionId: string, updates: { title?: string | null; description?: string | null }) => void;
   onCancelEdit?: () => void;
+  onReorder?: (draggedId: string, targetId: string) => void;
 }) {
   if (sessions.length === 0) {
     return (
@@ -240,6 +242,7 @@ export function SessionGrid({
         onStartEdit={onStartEdit ? () => onStartEdit(session.id) : undefined}
         onSaveMeta={onSaveMeta ? (updates) => onSaveMeta(session.id, updates) : undefined}
         onCancelEdit={onCancelEdit}
+        onReorder={onReorder}
       />
     );
   };
