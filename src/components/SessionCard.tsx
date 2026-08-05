@@ -7,6 +7,7 @@ import { OutputPreview } from "./OutputPreview";
 import { prLabel, PrStatusBadge } from "./PrStatusBadge";
 import { QuickActions } from "./QuickActions";
 import { QuickReply } from "./QuickReply";
+import { SessionDetails } from "./SessionDetails";
 import { StatusBadge } from "./StatusBadge";
 import { TaskSummaryView } from "./TaskSummaryView";
 
@@ -87,6 +88,14 @@ export function SessionCard({
   const displayStatus = isSuppressed ? (actedOn!.action === "reject" ? "idle" : "working") : session.status;
   const styles = cardStyles[displayStatus];
   const [cleanupState, setCleanupState] = useState<"idle" | "confirm" | "cleaning" | "done">("idle");
+  const [expanded, setExpanded] = useState(false);
+
+  const repoLabel =
+    (session.isWorktree && session.parentRepo
+      ? session.parentRepo.split("/").filter(Boolean).pop()
+      : session.repoName) ||
+    session.repoName ||
+    "Unknown";
 
   const canCleanup =
     session.isWorktree && (displayStatus === "idle" || displayStatus === "waiting" || displayStatus === "finished");
@@ -193,10 +202,16 @@ export function SessionCard({
                     {shortcutNumber}
                   </span>
                 )}
-                <h3 className="font-semibold text-[15px] text-zinc-100 truncate group-hover:text-white transition-colors">
-                  {session.isWorktree && session.parentRepo
-                    ? session.parentRepo.split("/").filter(Boolean).pop() || session.repoName
-                    : session.repoName || "Unknown"}
+                <h3
+                  onDoubleClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onStartEdit?.();
+                  }}
+                  title={session.taskSummary ? "Double-click to rename" : undefined}
+                  className="font-semibold text-[15px] text-zinc-100 truncate group-hover:text-white transition-colors"
+                >
+                  {session.taskSummary?.title || repoLabel}
                 </h3>
                 {session.isWorktree && (
                   <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded-sm bg-violet-500/10 border border-violet-500/20 text-violet-400">
@@ -205,7 +220,9 @@ export function SessionCard({
                 )}
               </div>
               <p className="text-[11px] text-zinc-600 truncate font-(family-name:--font-geist-mono) mt-0.5">
-                {session.workingDirectory.replace(/.*\/([^/]+\/[^/]+)$/, "$1")}
+                <span className="text-zinc-500">{repoLabel}</span>
+                {session.isWorktree && session.branch ? ` · ${session.branch}` : ""}
+                {session.taskSummary?.ticketId ? ` · ${session.taskSummary.ticketId}` : ""}
               </p>
             </div>
             <StatusBadge status={displayStatus} orphaned={session.orphaned} stale={isStale} />
@@ -214,7 +231,7 @@ export function SessionCard({
           {/* Git info + PR status */}
           {(session.git || session.prs.length > 0) && (
             <div className="mb-3 flex items-center gap-2 flex-wrap">
-              {session.git && <GitSummary git={session.git} />}
+              {session.git && <GitSummary git={session.git} showBranch={session.isWorktree} />}
               {session.prs.map((url) => {
                 const pr = prStatuses?.[url];
                 return pr ? (
@@ -223,6 +240,34 @@ export function SessionCard({
               })}
             </div>
           )}
+
+          {/* Teammates + full PR list */}
+          {(session.teammates.length > 0 || session.prs.length > 1) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(!expanded);
+              }}
+              className="mb-2 flex items-center gap-1 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors"
+            >
+              <svg
+                className={`w-3 h-3 transition-transform ${expanded ? "rotate-90" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+              {[
+                session.teammates.length > 0 ? `${session.teammates.length} teammates` : null,
+                session.prs.length > 0 ? `${session.prs.length} PRs` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </button>
+          )}
+          {expanded && <SessionDetails session={session} prStatuses={prStatuses} />}
 
           {/* Divider */}
           <div className="h-px bg-white/4 mb-3" />
@@ -244,8 +289,6 @@ export function SessionCard({
                 onSave={onSaveMeta}
                 onCancel={onCancelEdit}
               />
-            ) : session.taskSummary ? (
-              <TaskSummaryView task={session.taskSummary} onStartEdit={onStartEdit} />
             ) : (
               <div
                 onDoubleClick={(e) => {
@@ -253,8 +296,13 @@ export function SessionCard({
                   e.stopPropagation();
                   onStartEdit?.();
                 }}
-                title="Double-click to name this session"
+                title="Double-click to rename this session"
               >
+                {session.taskSummary?.description && (
+                  <p className="text-[11px] text-zinc-500 mb-1.5 line-clamp-2 leading-relaxed">
+                    {session.taskSummary.description}
+                  </p>
+                )}
                 <OutputPreview preview={session.preview} status={session.status} />
               </div>
             )}

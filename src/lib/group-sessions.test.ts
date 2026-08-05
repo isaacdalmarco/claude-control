@@ -29,6 +29,7 @@ function makeSession(overrides: Partial<ClaudeSession> = {}): ClaudeSession {
     prs: [],
     orphaned: false,
     tmuxSession: null,
+    teammates: [],
     ...overrides,
   };
 }
