@@ -61,6 +61,10 @@ async function findLatestJsonl(projectDir: string, excludePaths?: Set<string>): 
   }
 }
 
+// A long tool run pushes the last human prompt out of the 50-line tail window,
+// so remember it per session rather than letting the preview go blank.
+const lastPrompts = new Map<string, string>();
+
 // Orphan check runs on a slower cadence than the main poll
 let lastOrphanCheck = 0;
 let orphanedPids = new Set<number>();
@@ -118,6 +122,9 @@ async function buildSession(
     pendingToolUse = hasPendingToolUse(lines);
     taskSummary = extractTaskSummary(headLines);
     if (mtime) lastActivity = mtime.toISOString();
+
+    if (preview.lastUserMessage) lastPrompts.set(sessionId, preview.lastUserMessage);
+    else preview.lastUserMessage = lastPrompts.get(sessionId) ?? null;
   }
 
   // Claude Code retitles the terminal tab as the task evolves — a better label

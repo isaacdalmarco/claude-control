@@ -74,6 +74,10 @@ export function SessionRow({
 
   const prChip = aggregatePrChip(session.prs.map((url) => prStatuses?.[url]));
 
+  // What you last asked for says more about a row than the folder it runs in —
+  // and the repo is already the group heading above it.
+  const lastPrompt = session.preview.lastUserMessage?.replace(/\s+/g, " ").trim() || null;
+
   return (
     <div>
       <div
@@ -171,9 +175,13 @@ export function SessionRow({
                 </span>
               )}
             </div>
-            <span className="block text-[10px] text-zinc-600 truncate font-(family-name:--font-geist-mono)">
-              {repoLabel}
-              {session.isWorktree && session.branch ? ` · ${session.branch}` : ""}
+            <span className="block text-[10px] text-zinc-600 truncate" title={lastPrompt ?? undefined}>
+              {lastPrompt ?? (
+                <span className="font-(family-name:--font-geist-mono)">
+                  {repoLabel}
+                  {session.isWorktree && session.branch ? ` · ${session.branch}` : ""}
+                </span>
+              )}
             </span>
           </div>
         </div>
