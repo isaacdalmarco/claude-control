@@ -7,6 +7,18 @@ export interface PrChip {
   tone: ChipTone;
 }
 
+/**
+ * One chip for a session's whole set of PRs: done when they all are, otherwise
+ * whether anything is still open, and failing both the leading PR's own state.
+ */
+export function aggregatePrChip(prs: (PrStatus | null | undefined)[]): PrChip | null {
+  const known = prs.filter((pr): pr is PrStatus => !!pr);
+  if (known.length === 0) return null;
+  if (known.every((pr) => pr.state === "MERGED")) return { label: "Merged", tone: "purple" };
+  if (known.some((pr) => pr.state === "OPEN")) return { label: "Open", tone: "green" };
+  return prStateChip(known[0]);
+}
+
 /** The line you paste in #eng to ask for a review. */
 export function approvalMessage(url: string, title: string | null | undefined): string {
   const bare = url.replace(/^https?:\/\//, "");

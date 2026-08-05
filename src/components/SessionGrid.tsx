@@ -127,7 +127,7 @@ export function SessionGrid({
   onApproveReject?: (sessionId: string, action: "approve" | "reject") => void;
   editingSessionId?: string | null;
   onStartEdit?: (sessionId: string) => void;
-  onSaveMeta?: (sessionId: string, updates: { title: string | null; description: string | null }) => void;
+  onSaveMeta?: (sessionId: string, updates: { title?: string | null; description?: string | null }) => void;
   onCancelEdit?: () => void;
 }) {
   if (sessions.length === 0) {
@@ -236,6 +236,10 @@ export function SessionGrid({
               }
             : undefined
         }
+        editing={editingSessionId === session.id}
+        onStartEdit={onStartEdit ? () => onStartEdit(session.id) : undefined}
+        onSaveMeta={onSaveMeta ? (updates) => onSaveMeta(session.id, updates) : undefined}
+        onCancelEdit={onCancelEdit}
       />
     );
   };

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { extractTicketId } from "@/lib/linear";
-import { approvalMessage, ChipTone, prStateChip } from "@/lib/pr-chip";
+import { approvalMessage, prStateChip } from "@/lib/pr-chip";
 import { ClaudeSession, PrStatus, Teammate } from "@/lib/types";
 import { LinearChip } from "./LinearChip";
 import { openUrl, prLabel } from "./PrStatusBadge";
+import { StateChip } from "./StateChip";
 
 function joinedAgo(joinedAt: number | null): string {
   if (!joinedAt) return "";
@@ -57,25 +58,6 @@ function TeammateRow({ teammate }: { teammate: Teammate }) {
         {running ? joinedAgo(teammate.joinedAt) : "exited"}
       </span>
     </div>
-  );
-}
-
-const chipTones: Record<ChipTone, string> = {
-  green: "border-emerald-500/25 bg-emerald-500/10 text-emerald-400",
-  purple: "border-violet-500/25 bg-violet-500/10 text-violet-400",
-  red: "border-red-500/25 bg-red-500/10 text-red-400",
-  amber: "border-amber-500/25 bg-amber-500/10 text-amber-400",
-  zinc: "border-white/10 bg-white/5 text-zinc-400",
-};
-
-function StateChip({ pr }: { pr: PrStatus }) {
-  const chip = prStateChip(pr);
-  return (
-    <span
-      className={`shrink-0 px-1.5 py-px rounded-full border text-[9px] font-medium whitespace-nowrap ${chipTones[chip.tone]}`}
-    >
-      {chip.label}
-    </span>
   );
 }
 
@@ -131,7 +113,7 @@ function PrRow({ url, pr }: { url: string; pr: PrStatus | null | undefined }) {
         {prLabel(url)}
       </span>
       {ticketId && <LinearChip ticketId={ticketId} />}
-      {pr && <StateChip pr={pr} />}
+      {pr && <StateChip chip={prStateChip(pr)} />}
       {pr?.checksDetail && (
         <span className="shrink-0 text-zinc-600 font-(family-name:--font-geist-mono) text-[10px]">
           {pr.checksDetail.passing}/{pr.checksDetail.total}

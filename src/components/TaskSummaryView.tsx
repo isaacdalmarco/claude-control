@@ -6,7 +6,7 @@ import { TaskSummary } from "@/lib/types";
 interface TaskSummaryViewProps {
   task: TaskSummary;
   editing?: boolean;
-  onSave?: (updates: { title: string | null; description: string | null }) => void;
+  onSave?: (updates: { title?: string | null; description?: string | null }) => void;
   onCancel?: () => void;
   onStartEdit?: () => void;
 }

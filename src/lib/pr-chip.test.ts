@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { approvalMessage, prStateChip } from "./pr-chip";
+import { aggregatePrChip, approvalMessage, prStateChip } from "./pr-chip";
 import { PrStatus } from "./types";
 
 function pr(overrides: Partial<PrStatus>): PrStatus {
@@ -20,6 +20,25 @@ function pr(overrides: Partial<PrStatus>): PrStatus {
     ...overrides,
   };
 }
+
+describe("aggregatePrChip", () => {
+  it("is Merged when every PR is", () => {
+    expect(aggregatePrChip([pr({ state: "MERGED" }), pr({ state: "MERGED" })])?.label).toBe("Merged");
+  });
+
+  it("is Open when anything is still open", () => {
+    expect(aggregatePrChip([pr({ state: "MERGED" }), pr({ state: "OPEN" })])?.label).toBe("Open");
+  });
+
+  it("falls back to the leading PR's own state", () => {
+    expect(aggregatePrChip([pr({ state: "CLOSED" }), pr({ state: "MERGED" })])?.label).toBe("Closed");
+  });
+
+  it("ignores PRs whose status has not loaded, and yields nothing when none have", () => {
+    expect(aggregatePrChip([null, pr({ state: "OPEN" })])?.label).toBe("Open");
+    expect(aggregatePrChip([null, undefined])).toBeNull();
+  });
+});
 
 describe("approvalMessage", () => {
   it("drops the scheme and joins the title with a dash", () => {

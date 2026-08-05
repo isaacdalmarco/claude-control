@@ -80,7 +80,7 @@ export function SessionCard({
   onApproveReject?: (action: "approve" | "reject") => void;
   editing?: boolean;
   onStartEdit?: () => void;
-  onSaveMeta?: (updates: { title: string | null; description: string | null }) => void;
+  onSaveMeta?: (updates: { title?: string | null; description?: string | null }) => void;
   onCancelEdit?: () => void;
 }) {
   const isSuppressed = !!actedOn;

@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { extractTicketId } from "@/lib/linear";
+import { aggregatePrChip } from "@/lib/pr-chip";
 import { ClaudeSession, PrStatus, SessionStatus, statusLabels } from "@/lib/types";
 import { LinearChip } from "./LinearChip";
 import { SessionDetails } from "./SessionDetails";
+import { StateChip } from "./StateChip";
 
 const statusColors: Record<SessionStatus, { dot: string; text: string }> = {
   working: { dot: "bg-emerald-500", text: "text-emerald-400" },
@@ -23,6 +25,10 @@ export function SessionRow({
   displayStatus,
   isStale,
   onApproveReject,
+  editing,
+  onStartEdit,
+  onSaveMeta,
+  onCancelEdit,
 }: {
   session: ClaudeSession;
   selected?: boolean;
@@ -32,9 +38,21 @@ export function SessionRow({
   displayStatus: SessionStatus;
   isStale?: boolean;
   onApproveReject?: (action: "approve" | "reject") => void;
+  editing?: boolean;
+  onStartEdit?: () => void;
+  onSaveMeta?: (updates: { title?: string | null; description?: string | null }) => void;
+  onCancelEdit?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [prevSelected, setPrevSelected] = useState(selected);
+  const [draft, setDraft] = useState("");
+  const [prevEditing, setPrevEditing] = useState(editing);
+
+  // Seed the input from whatever the row currently shows when editing opens.
+  if (editing !== prevEditing) {
+    setPrevEditing(editing);
+    if (editing) setDraft(session.taskSummary?.title ?? "");
+  }
 
   // Selecting a row opens it, deselecting closes it; the chevron still wins after that.
   if (selected !== prevSelected) {
@@ -52,6 +70,8 @@ export function SessionRow({
 
   const ticketId =
     session.taskSummary?.ticketId ?? extractTicketId(session.taskSummary?.title, session.branch, repoLabel);
+
+  const prChip = aggregatePrChip(session.prs.map((url) => prStatuses?.[url]));
 
   return (
     <div>
@@ -94,10 +114,56 @@ export function SessionRow({
         <div className="min-w-0 flex-1 flex items-center gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-zinc-200 font-medium truncate">
-                {session.taskSummary?.title || repoLabel}
-              </span>
+              {editing ? (
+                <span className="flex items-center gap-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        onSaveMeta?.({ title: draft.trim() || null });
+                      }
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        onCancelEdit?.();
+                      }
+                    }}
+                    className="min-w-0 w-64 px-2 py-0.5 rounded-md text-sm bg-white/6 border border-white/10 focus:border-blue-500/40 text-zinc-200 outline-hidden"
+                  />
+                  <button
+                    onClick={() => onSaveMeta?.({ title: draft.trim() || null })}
+                    className="has-tooltip shrink-0 text-emerald-400 hover:text-emerald-300"
+                    data-tip="Apply (⏎)"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </button>
+                </span>
+              ) : (
+                <span
+                  onDoubleClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onStartEdit?.();
+                  }}
+                  title="Double-click to rename"
+                  className="text-sm text-zinc-200 font-medium truncate"
+                >
+                  {session.taskSummary?.title || repoLabel}
+                </span>
+              )}
               {ticketId && <LinearChip ticketId={ticketId} url={session.taskSummary?.ticketUrl} />}
+              {prChip && <StateChip chip={prChip} />}
               {session.isWorktree && (
                 <span className="shrink-0 px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-sm bg-violet-500/10 border border-violet-500/20 text-violet-400">
                   wt
