@@ -1,7 +1,9 @@
 "use client";
 
+import { extractTicketId } from "@/lib/linear";
 import { ChipTone, prStateChip } from "@/lib/pr-chip";
 import { ClaudeSession, PrStatus, Teammate } from "@/lib/types";
+import { LinearChip } from "./LinearChip";
 import { openUrl, prLabel } from "./PrStatusBadge";
 
 function joinedAgo(joinedAt: number | null): string {
@@ -77,6 +79,7 @@ function StateChip({ pr }: { pr: PrStatus }) {
 }
 
 function PrRow({ url, pr }: { url: string; pr: PrStatus | null | undefined }) {
+  const ticketId = extractTicketId(pr?.headRefName, pr?.title);
   return (
     <div
       onClick={(e) => openUrl(e, url)}
@@ -87,6 +90,7 @@ function PrRow({ url, pr }: { url: string; pr: PrStatus | null | undefined }) {
       <span className="truncate text-zinc-300 group-hover:text-blue-300 font-(family-name:--font-geist-mono)">
         {prLabel(url)}
       </span>
+      {ticketId && <LinearChip ticketId={ticketId} />}
       {pr && <StateChip pr={pr} />}
       {pr?.checksDetail && (
         <span className="shrink-0 text-zinc-600 font-(family-name:--font-geist-mono) text-[10px]">

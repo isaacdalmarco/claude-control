@@ -64,7 +64,7 @@ async function fetchPrStatus(prUrl: string, cwd: string): Promise<PrStatus | nul
           "view",
           prUrl,
           "--json",
-          "url,state,isDraft,statusCheckRollup,reviewDecision,mergeable,mergeStateStatus,additions,deletions",
+          "url,state,isDraft,statusCheckRollup,reviewDecision,mergeable,mergeStateStatus,additions,deletions,headRefName,title",
         ],
         { cwd, timeout: 10000 },
       ),
@@ -125,6 +125,8 @@ async function fetchPrStatus(prUrl: string, cwd: string): Promise<PrStatus | nul
       commentCount: threadResult.commentCount,
       additions: data.additions ?? 0,
       deletions: data.deletions ?? 0,
+      headRefName: data.headRefName ?? null,
+      title: data.title ?? null,
     };
   } catch {
     return null;

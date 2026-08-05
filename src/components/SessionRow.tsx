@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { extractTicketId } from "@/lib/linear";
 import { ClaudeSession, PrStatus, SessionStatus, statusLabels } from "@/lib/types";
+import { LinearChip } from "./LinearChip";
 import { SessionDetails } from "./SessionDetails";
 
 const statusColors: Record<SessionStatus, { dot: string; text: string }> = {
@@ -48,6 +50,9 @@ export function SessionRow({
       ? session.workingDirectory.split("/").filter(Boolean).pop() || session.repoName
       : session.repoName || "Unknown";
 
+  const ticketId =
+    session.taskSummary?.ticketId ?? extractTicketId(session.taskSummary?.title, session.branch, repoLabel);
+
   return (
     <div>
       <div
@@ -92,6 +97,7 @@ export function SessionRow({
               <span className="text-sm text-zinc-200 font-medium truncate">
                 {session.taskSummary?.title || repoLabel}
               </span>
+              {ticketId && <LinearChip ticketId={ticketId} url={session.taskSummary?.ticketUrl} />}
               {session.isWorktree && (
                 <span className="shrink-0 px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-sm bg-violet-500/10 border border-violet-500/20 text-violet-400">
                   wt

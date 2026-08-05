@@ -95,6 +95,8 @@ export interface PrStatus {
   commentCount: number;
   additions: number;
   deletions: number;
+  headRefName: string | null;
+  title: string | null;
 }
 
 export interface SessionDetail extends ClaudeSession {
