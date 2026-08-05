@@ -15,6 +15,8 @@ function pr(overrides: Partial<PrStatus>): PrStatus {
     commentCount: 0,
     additions: 0,
     deletions: 0,
+    headRefName: null,
+    title: null,
     ...overrides,
   };
 }
