@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useSettings } from "@/hooks/useSettings";
 import { ClaudeSession, PrStatus, SessionStatus, statusLabels } from "@/lib/types";
 import { SessionDetails } from "./SessionDetails";
 
@@ -34,7 +33,6 @@ export function SessionRow({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [prevSelected, setPrevSelected] = useState(selected);
-  const { editorAvailable } = useSettings();
 
   // Selecting a row opens it, deselecting closes it; the chevron still wins after that.
   if (selected !== prevSelected) {
@@ -107,7 +105,7 @@ export function SessionRow({
           </div>
         </div>
 
-        {editorAvailable && (
+        {session.pid && (
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -115,17 +113,17 @@ export function SessionRow({
               fetch("/api/actions/open", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "editor", path: session.workingDirectory, pid: session.pid }),
-              }).catch((err) => console.error("Open editor failed:", err));
+                body: JSON.stringify({ action: "focus", path: session.workingDirectory, pid: session.pid }),
+              }).catch((err) => console.error("Focus terminal failed:", err));
             }}
             className="has-tooltip shrink-0 flex items-center justify-center w-7 h-7 rounded-md bg-white/4 hover:bg-white/10 border border-white/7 hover:border-white/15 text-zinc-500 hover:text-zinc-200 transition-all"
-            data-tip="Editor"
+            data-tip="Terminal"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"
+                d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"
               />
             </svg>
           </button>
