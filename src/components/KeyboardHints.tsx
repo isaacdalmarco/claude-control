@@ -60,7 +60,7 @@ export function KeyboardHints({
               {selectedSession ? (
                 <>
                   <span className="w-px h-3 bg-zinc-800" />
-                  <Hint keys="Enter" label="terminal" />
+                  <Hint keys="T" label="terminal" />
                   {editorAvailable && <Hint keys="E" label="editor" />}
                   {gitGuiAvailable && <Hint keys="G" label="git" />}
                   <Hint keys="F" label="finder" />

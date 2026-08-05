@@ -46,6 +46,7 @@ export function SessionRow({
   const [expanded, setExpanded] = useState(false);
   const [prevSelected, setPrevSelected] = useState(selected);
   const [draft, setDraft] = useState("");
+  const [killing, setKilling] = useState(false);
   const [prevEditing, setPrevEditing] = useState(editing);
 
   // Seed the input from whatever the row currently shows when editing opens.
@@ -197,6 +198,38 @@ export function SessionRow({
                 strokeLinejoin="round"
                 d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"
               />
+            </svg>
+          </button>
+        )}
+
+        {session.pid && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const label = session.taskSummary?.title || repoLabel;
+              const alsoTeammates = session.teammates.length
+                ? ` and ${session.teammates.length} teammate${session.teammates.length > 1 ? "s" : ""}`
+                : "";
+              if (!window.confirm(`Kill "${label}"${alsoTeammates}?\n\nUnsaved work in the session is lost.`)) return;
+              setKilling(true);
+              fetch("/api/sessions/kill", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  pid: session.pid,
+                  teammatePids: session.teammates.map((t) => t.pid).filter(Boolean),
+                }),
+              })
+                .catch((err) => console.error("Kill failed:", err))
+                .finally(() => setTimeout(() => setKilling(false), 3000));
+            }}
+            disabled={killing}
+            className="has-tooltip shrink-0 flex items-center justify-center w-7 h-7 rounded-md bg-white/4 hover:bg-red-500/15 border border-white/7 hover:border-red-500/25 text-zinc-500 hover:text-red-400 disabled:opacity-40 transition-all"
+            data-tip={session.teammates.length ? "Kill session + teammates" : "Kill session"}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
             </svg>
           </button>
         )}

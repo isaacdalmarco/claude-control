@@ -187,6 +187,7 @@ export function useKeyboardShortcuts({
 
       switch (e.key.toLowerCase()) {
         case "enter":
+        case "t":
           if (selectedSession.pid) {
             e.preventDefault();
             openAction("focus", selectedSession);

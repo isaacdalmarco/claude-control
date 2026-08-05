@@ -57,6 +57,21 @@ export async function isClaudeProcess(pid: number): Promise<boolean> {
 }
 
 /**
+ * Teammates run the versioned binary directly, so their `comm` is a version
+ * number rather than "claude" — identify them by their agent flag instead.
+ */
+export async function isClaudeAgentProcess(pid: number): Promise<boolean> {
+  try {
+    const { stdout } = await execFileAsync("ps", ["-o", "command=", "-p", String(pid)], {
+      timeout: PROCESS_TIMEOUT_MS,
+    });
+    return stdout.includes("--agent-id") && stdout.includes("claude");
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Build ProcessInfo for all given PIDs using the process tree + one lsof call.
  * The tree (from buildProcessTree) provides comm and %cpu; lsof provides cwds.
  * Since findClaudePidsFromTree already filters by `comm === "claude"`, the
