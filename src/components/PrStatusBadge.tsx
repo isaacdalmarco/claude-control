@@ -42,7 +42,7 @@ export function prLabel(url: string): string {
   return match ? `${match[1]}#${match[2]}` : url;
 }
 
-function openPr(e: React.MouseEvent, url: string) {
+export function openUrl(e: React.MouseEvent, url: string) {
   e.preventDefault();
   e.stopPropagation();
   fetch("/api/actions/open", {
@@ -67,7 +67,7 @@ export function PrStatusBadge({ pr, label }: { pr: PrStatus; label?: string }) {
   if (pr.state === "MERGED") {
     return (
       <div
-        onClick={(e) => openPr(e, pr.url)}
+        onClick={(e) => openUrl(e, pr.url)}
         className={`has-tooltip inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] cursor-pointer ${borderColors.purple}`}
         data-tip="PR merged"
       >
@@ -86,7 +86,7 @@ export function PrStatusBadge({ pr, label }: { pr: PrStatus; label?: string }) {
   if (pr.state === "CLOSED") {
     return (
       <div
-        onClick={(e) => openPr(e, pr.url)}
+        onClick={(e) => openUrl(e, pr.url)}
         className={`has-tooltip inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] cursor-pointer ${borderColors.red}`}
         data-tip="PR closed"
       >
@@ -204,7 +204,7 @@ export function PrStatusBadge({ pr, label }: { pr: PrStatus; label?: string }) {
 
   return (
     <div
-      onClick={(e) => openPr(e, pr.url)}
+      onClick={(e) => openUrl(e, pr.url)}
       className={`has-tooltip inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] cursor-pointer ${borderColors[color] || borderColors.zinc}`}
       data-tip={checksTooltip(pr)}
     >

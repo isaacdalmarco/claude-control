@@ -7,6 +7,7 @@ import { OutputPreview } from "./OutputPreview";
 import { prLabel, PrStatusBadge } from "./PrStatusBadge";
 import { QuickActions } from "./QuickActions";
 import { QuickReply } from "./QuickReply";
+import { SessionDetails } from "./SessionDetails";
 import { StatusBadge } from "./StatusBadge";
 import { TaskSummaryView } from "./TaskSummaryView";
 
@@ -87,6 +88,7 @@ export function SessionCard({
   const displayStatus = isSuppressed ? (actedOn!.action === "reject" ? "idle" : "working") : session.status;
   const styles = cardStyles[displayStatus];
   const [cleanupState, setCleanupState] = useState<"idle" | "confirm" | "cleaning" | "done">("idle");
+  const [expanded, setExpanded] = useState(false);
 
   const canCleanup =
     session.isWorktree && (displayStatus === "idle" || displayStatus === "waiting" || displayStatus === "finished");
@@ -223,6 +225,34 @@ export function SessionCard({
               })}
             </div>
           )}
+
+          {/* Teammates + full PR list */}
+          {(session.teammates.length > 0 || session.prs.length > 1) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(!expanded);
+              }}
+              className="mb-2 flex items-center gap-1 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors"
+            >
+              <svg
+                className={`w-3 h-3 transition-transform ${expanded ? "rotate-90" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+              {[
+                session.teammates.length > 0 ? `${session.teammates.length} teammates` : null,
+                session.prs.length > 0 ? `${session.prs.length} PRs` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </button>
+          )}
+          {expanded && <SessionDetails session={session} prStatuses={prStatuses} />}
 
           {/* Divider */}
           <div className="h-px bg-white/4 mb-3" />

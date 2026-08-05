@@ -32,6 +32,18 @@ export interface ClaudeSession {
   prs: string[];
   orphaned: boolean;
   tmuxSession: string | null;
+  /** Sub-agents this session spawned, from ~/.claude/teams. */
+  teammates: Teammate[];
+}
+
+export interface Teammate {
+  agentId: string;
+  name: string;
+  agentType: string;
+  model: string | null;
+  joinedAt: number | null;
+  /** Set while the teammate's process is alive. */
+  pid: number | null;
 }
 
 export interface GitSummary {
@@ -73,6 +85,7 @@ export type PrReviewDecision = "APPROVED" | "CHANGES_REQUESTED" | "REVIEW_REQUIR
 export interface PrStatus {
   url: string;
   state: "OPEN" | "MERGED" | "CLOSED";
+  isDraft: boolean;
   checks: PrChecks;
   reviewDecision: PrReviewDecision;
   mergeable: "MERGEABLE" | "CONFLICTING" | "UNKNOWN";
