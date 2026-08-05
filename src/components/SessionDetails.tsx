@@ -45,18 +45,16 @@ function ChecksIcon({ pr }: { pr: PrStatus | null | undefined }) {
   );
 }
 
+// Claude Code drops a member from the team config as soon as it finishes, so
+// everything listed here is still running.
 function TeammateRow({ teammate }: { teammate: Teammate }) {
-  const running = teammate.pid !== null;
   return (
     <div className="flex items-center gap-2 text-[11px] py-1">
-      <span className={`w-1.5 h-1.5 shrink-0 rounded-full ${running ? "bg-emerald-500" : "bg-zinc-700"}`} />
-      <span className={`truncate ${running ? "text-zinc-300" : "text-zinc-500"}`}>{teammate.name}</span>
+      <span className="truncate text-zinc-300">{teammate.name}</span>
       <span className="shrink-0 text-zinc-600 font-(family-name:--font-geist-mono) text-[10px]">
         {teammate.agentType}
       </span>
-      <span className="ml-auto shrink-0 text-zinc-600 text-[10px]">
-        {running ? joinedAgo(teammate.joinedAt) : "exited"}
-      </span>
+      <span className="ml-auto shrink-0 text-zinc-600 text-[10px]">{joinedAgo(teammate.joinedAt)}</span>
     </div>
   );
 }
