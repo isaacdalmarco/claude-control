@@ -22,7 +22,12 @@ type ActionType = "focus" | "iterm" | "editor" | "finder" | "git-gui" | "send-me
  * Move the frontmost window of an app to a target screen.
  * screenIndex 0 = primary/main screen, 1 = secondary, etc.
  */
-async function moveAppToScreen(appName: string, screenIndex: number): Promise<void> {
+async function moveAppToScreen(appName: string, rawScreenIndex: number): Promise<void> {
+  // Interpolated into AppleScript, and the request body is JSON — a string here
+  // would be injected verbatim, and AppleScript can `do shell script`.
+  const screenIndex = Math.max(0, Math.trunc(Number(rawScreenIndex)));
+  if (!Number.isFinite(screenIndex)) return;
+
   const script = `
 use framework "AppKit"
 
@@ -169,6 +174,11 @@ export async function POST(request: Request) {
       case "open-url": {
         if (!url) {
           return NextResponse.json({ error: "Missing url" }, { status: 400 });
+        }
+        // `open` hands anything to LaunchServices — file:// reaches local paths and a
+        // custom scheme drives whatever app claims it. Only the web is intended here.
+        if (!/^https?:\/\//i.test(url)) {
+          return NextResponse.json({ error: "Only http(s) URLs can be opened" }, { status: 400 });
         }
         const browserConfig = await loadConfig();
         const browserDef = BROWSER_OPTIONS.find((b) => b.id === browserConfig.browser) ?? BROWSER_OPTIONS[0];
