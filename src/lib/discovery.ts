@@ -23,6 +23,7 @@ import {
   readJsonlTail,
 } from "./session-reader";
 import { classifyStatus } from "./status-classifier";
+import { readTeams } from "./teams";
 import {
   buildProcessTree,
   detectAllTmuxPanes,
@@ -33,7 +34,7 @@ import {
   isOrphaned,
 } from "./terminal/detect";
 import { getTabTitles } from "./terminal/tab-titles";
-import { ClaudeSession, ConversationPreview, SessionDetail } from "./types";
+import { ClaudeSession, ConversationPreview, SessionDetail, Teammate } from "./types";
 
 async function findLatestJsonl(projectDir: string, excludePaths?: Set<string>): Promise<string | null> {
   try {
@@ -73,6 +74,7 @@ async function buildSession(
   orphaned: boolean,
   tmuxSession: string | null,
   tabTitle: string | null,
+  teams: Map<string, Teammate[]>,
 ): Promise<ClaudeSession | null> {
   if (!info.workingDirectory) return null;
 
@@ -185,6 +187,7 @@ async function buildSession(
     prs,
     orphaned: recentActivity ? false : orphaned,
     tmuxSession,
+    teammates: teams.get(sessionId) ?? [],
   };
 }
 
@@ -233,7 +236,7 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
     pidTty = ttyMap;
   }
 
-  const tabTitles = await getTabTitles();
+  const [tabTitles, teams] = await Promise.all([getTabTitles(), readTeams()]);
 
   // Collect transcript paths claimed by hook events so fallback doesn't reuse them
   const claimedPaths = new Set<string>();
@@ -254,6 +257,7 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
           orphanedPids.has(info.pid),
           pidTmuxSession.get(info.pid) ?? null,
           tabTitles.get(pidTty.get(info.pid) ?? "") ?? null,
+          teams,
         ),
       ),
   );
