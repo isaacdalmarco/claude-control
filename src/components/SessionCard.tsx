@@ -90,6 +90,13 @@ export function SessionCard({
   const [cleanupState, setCleanupState] = useState<"idle" | "confirm" | "cleaning" | "done">("idle");
   const [expanded, setExpanded] = useState(false);
 
+  const repoLabel =
+    (session.isWorktree && session.parentRepo
+      ? session.parentRepo.split("/").filter(Boolean).pop()
+      : session.repoName) ||
+    session.repoName ||
+    "Unknown";
+
   const canCleanup =
     session.isWorktree && (displayStatus === "idle" || displayStatus === "waiting" || displayStatus === "finished");
 
@@ -195,10 +202,16 @@ export function SessionCard({
                     {shortcutNumber}
                   </span>
                 )}
-                <h3 className="font-semibold text-[15px] text-zinc-100 truncate group-hover:text-white transition-colors">
-                  {session.isWorktree && session.parentRepo
-                    ? session.parentRepo.split("/").filter(Boolean).pop() || session.repoName
-                    : session.repoName || "Unknown"}
+                <h3
+                  onDoubleClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onStartEdit?.();
+                  }}
+                  title={session.taskSummary ? "Double-click to rename" : undefined}
+                  className="font-semibold text-[15px] text-zinc-100 truncate group-hover:text-white transition-colors"
+                >
+                  {session.taskSummary?.title || repoLabel}
                 </h3>
                 {session.isWorktree && (
                   <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded-sm bg-violet-500/10 border border-violet-500/20 text-violet-400">
@@ -207,7 +220,9 @@ export function SessionCard({
                 )}
               </div>
               <p className="text-[11px] text-zinc-600 truncate font-(family-name:--font-geist-mono) mt-0.5">
-                {session.workingDirectory.replace(/.*\/([^/]+\/[^/]+)$/, "$1")}
+                <span className="text-zinc-500">{repoLabel}</span>
+                {session.isWorktree && session.branch ? ` · ${session.branch}` : ""}
+                {session.taskSummary?.ticketId ? ` · ${session.taskSummary.ticketId}` : ""}
               </p>
             </div>
             <StatusBadge status={displayStatus} orphaned={session.orphaned} stale={isStale} />
@@ -216,7 +231,7 @@ export function SessionCard({
           {/* Git info + PR status */}
           {(session.git || session.prs.length > 0) && (
             <div className="mb-3 flex items-center gap-2 flex-wrap">
-              {session.git && <GitSummary git={session.git} />}
+              {session.git && <GitSummary git={session.git} showBranch={session.isWorktree} />}
               {session.prs.map((url) => {
                 const pr = prStatuses?.[url];
                 return pr ? (
@@ -274,8 +289,6 @@ export function SessionCard({
                 onSave={onSaveMeta}
                 onCancel={onCancelEdit}
               />
-            ) : session.taskSummary ? (
-              <TaskSummaryView task={session.taskSummary} onStartEdit={onStartEdit} />
             ) : (
               <div
                 onDoubleClick={(e) => {
@@ -283,8 +296,13 @@ export function SessionCard({
                   e.stopPropagation();
                   onStartEdit?.();
                 }}
-                title="Double-click to name this session"
+                title="Double-click to rename this session"
               >
+                {session.taskSummary?.description && (
+                  <p className="text-[11px] text-zinc-500 mb-1.5 line-clamp-2 leading-relaxed">
+                    {session.taskSummary.description}
+                  </p>
+                )}
                 <OutputPreview preview={session.preview} status={session.status} />
               </div>
             )}
