@@ -33,7 +33,14 @@ export function SessionRow({
   onApproveReject?: (action: "approve" | "reject") => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [prevSelected, setPrevSelected] = useState(selected);
   const { editorAvailable } = useSettings();
+
+  // Selecting a row opens it, deselecting closes it; the chevron still wins after that.
+  if (selected !== prevSelected) {
+    setPrevSelected(selected);
+    setExpanded(!!selected);
+  }
   const colors = isStale ? { dot: "bg-zinc-500", text: "text-zinc-400" } : statusColors[displayStatus];
   const label = isStale ? "Stale" : statusLabels[displayStatus];
   const isWaiting = displayStatus === "waiting";
