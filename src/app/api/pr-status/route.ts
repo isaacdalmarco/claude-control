@@ -59,7 +59,13 @@ async function fetchPrStatus(prUrl: string, cwd: string): Promise<PrStatus | nul
     const [ghResult, threadResult] = await Promise.all([
       execFileAsync(
         "gh",
-        ["pr", "view", prUrl, "--json", "url,state,statusCheckRollup,reviewDecision,mergeable,mergeStateStatus"],
+        [
+          "pr",
+          "view",
+          prUrl,
+          "--json",
+          "url,state,isDraft,statusCheckRollup,reviewDecision,mergeable,mergeStateStatus",
+        ],
         { cwd, timeout: 10000 },
       ),
       fetchReviewThreads(prUrl, cwd),
@@ -109,6 +115,7 @@ async function fetchPrStatus(prUrl: string, cwd: string): Promise<PrStatus | nul
     return {
       url: data.url ?? prUrl,
       state: data.state ?? "OPEN",
+      isDraft: data.isDraft ?? false,
       checks,
       reviewDecision: data.reviewDecision || null,
       mergeable: data.mergeable ?? "UNKNOWN",

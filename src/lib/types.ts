@@ -85,6 +85,7 @@ export type PrReviewDecision = "APPROVED" | "CHANGES_REQUESTED" | "REVIEW_REQUIR
 export interface PrStatus {
   url: string;
   state: "OPEN" | "MERGED" | "CLOSED";
+  isDraft: boolean;
   checks: PrChecks;
   reviewDecision: PrReviewDecision;
   mergeable: "MERGEABLE" | "CONFLICTING" | "UNKNOWN";

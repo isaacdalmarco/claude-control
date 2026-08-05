@@ -1,5 +1,6 @@
 "use client";
 
+import { ChipTone, prStateChip } from "@/lib/pr-chip";
 import { ClaudeSession, PrStatus, Teammate } from "@/lib/types";
 import { openUrl, prLabel } from "./PrStatusBadge";
 
@@ -56,6 +57,25 @@ function TeammateRow({ teammate }: { teammate: Teammate }) {
   );
 }
 
+const chipTones: Record<ChipTone, string> = {
+  green: "border-emerald-500/25 bg-emerald-500/10 text-emerald-400",
+  purple: "border-violet-500/25 bg-violet-500/10 text-violet-400",
+  red: "border-red-500/25 bg-red-500/10 text-red-400",
+  amber: "border-amber-500/25 bg-amber-500/10 text-amber-400",
+  zinc: "border-white/10 bg-white/5 text-zinc-400",
+};
+
+function StateChip({ pr }: { pr: PrStatus }) {
+  const chip = prStateChip(pr);
+  return (
+    <span
+      className={`shrink-0 px-1.5 py-px rounded-full border text-[9px] font-medium whitespace-nowrap ${chipTones[chip.tone]}`}
+    >
+      {chip.label}
+    </span>
+  );
+}
+
 function PrRow({ url, pr }: { url: string; pr: PrStatus | null | undefined }) {
   return (
     <div
@@ -67,6 +87,7 @@ function PrRow({ url, pr }: { url: string; pr: PrStatus | null | undefined }) {
       <span className="truncate text-zinc-300 group-hover:text-blue-300 font-(family-name:--font-geist-mono)">
         {prLabel(url)}
       </span>
+      {pr && <StateChip pr={pr} />}
       {pr?.checksDetail && (
         <span className="shrink-0 text-zinc-600 font-(family-name:--font-geist-mono) text-[10px]">
           {pr.checksDetail.passing}/{pr.checksDetail.total}
