@@ -4,6 +4,7 @@ import { sendKeystrokeAction } from "@/lib/actions";
 import { groupSessions } from "@/lib/group-sessions";
 import { isSessionStale } from "@/lib/stale";
 import { ClaudeSession, PrStatus, ViewMode } from "@/lib/types";
+import { FlipList } from "./FlipList";
 import { SessionCard } from "./SessionCard";
 import { SessionRow } from "./SessionRow";
 
@@ -249,7 +250,9 @@ export function SessionGrid({
 
   const renderSessions = (items: ClaudeSession[]) =>
     viewMode === "list" ? (
-      <div className="space-y-1">{items.map(renderRow)}</div>
+      <FlipList order={items.map((s) => s.id).join(",")} className="space-y-1">
+        {items.map(renderRow)}
+      </FlipList>
     ) : (
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 items-start">{items.map(renderCard)}</div>
     );

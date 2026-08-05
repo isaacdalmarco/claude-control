@@ -8,6 +8,10 @@ import { LinearChip } from "./LinearChip";
 import { SessionDetails } from "./SessionDetails";
 import { StateChip } from "./StateChip";
 
+// A drag is a single global interaction, and dragover can't read dataTransfer,
+// so the row being dragged is tracked here rather than threaded through props.
+let draggedSessionId: string | null = null;
+
 const statusColors: Record<SessionStatus, { dot: string; text: string }> = {
   working: { dot: "bg-emerald-500", text: "text-emerald-400" },
   idle: { dot: "bg-amber-500", text: "text-amber-400" },
@@ -49,7 +53,7 @@ export function SessionRow({
   const [prevSelected, setPrevSelected] = useState(selected);
   const [draft, setDraft] = useState("");
   const [killing, setKilling] = useState(false);
-  const [dropTarget, setDropTarget] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [prevEditing, setPrevEditing] = useState(editing);
 
   // Seed the input from whatever the row currently shows when editing opens.
@@ -82,31 +86,33 @@ export function SessionRow({
   const lastPrompt = session.preview.lastUserMessage?.replace(/\s+/g, " ").trim() || null;
 
   return (
-    <div>
+    <div data-flip-key={session.id}>
       <div
         onClick={onSelect}
         draggable={!!onReorder}
         onDragStart={(e) => {
           e.dataTransfer.setData("text/plain", session.id);
           e.dataTransfer.effectAllowed = "move";
+          draggedSessionId = session.id;
+          setDragging(true);
+        }}
+        onDragEnd={() => {
+          draggedSessionId = null;
+          setDragging(false);
         }}
         onDragOver={(e) => {
+          // Reorder as the cursor crosses a row rather than waiting for the drop,
+          // so the list shows the result while the drag is still in flight.
           if (!onReorder) return;
           e.preventDefault();
-          setDropTarget(true);
+          if (draggedSessionId && draggedSessionId !== session.id) onReorder(draggedSessionId, session.id);
         }}
-        onDragLeave={() => setDropTarget(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDropTarget(false);
-          const draggedId = e.dataTransfer.getData("text/plain");
-          if (draggedId && draggedId !== session.id) onReorder?.(draggedId, session.id);
-        }}
+        onDrop={(e) => e.preventDefault()}
         className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-100 ${
           selected
             ? "bg-blue-500/8 border border-blue-400/30 shadow-[0_0_20px_rgba(96,165,250,0.1)]"
             : "bg-white/2 border border-transparent hover:bg-white/4 hover:border-white/6"
-        } ${dropTarget ? "border-blue-400/50 bg-blue-500/5" : ""} ${isStale && !selected ? "opacity-55 hover:opacity-100" : ""}`}
+        } ${dragging ? "opacity-40" : ""} ${isStale && !selected ? "opacity-55 hover:opacity-100" : ""}`}
       >
         {onReorder && (
           <span
