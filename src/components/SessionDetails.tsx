@@ -93,6 +93,12 @@ function PrRow({ url, pr }: { url: string; pr: PrStatus | null | undefined }) {
           {pr.checksDetail.passing}/{pr.checksDetail.total}
         </span>
       )}
+      {pr && (pr.additions > 0 || pr.deletions > 0) && (
+        <span className="shrink-0 flex items-center gap-1 font-(family-name:--font-geist-mono) text-[10px]">
+          <span className="text-emerald-500">+{pr.additions}</span>
+          <span className="text-red-400">-{pr.deletions}</span>
+        </span>
+      )}
       {pr && pr.unresolvedThreads > 0 && (
         <span className="ml-auto shrink-0 inline-flex items-center gap-1 text-amber-400" title="Unresolved comments">
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -118,9 +124,9 @@ export function SessionDetails({
   prStatuses?: Record<string, PrStatus | null>;
 }) {
   return (
-    <div className="mb-3 rounded-lg border border-white/6 bg-white/2 px-2.5 py-2 space-y-2">
+    <div className="mb-3 grid gap-2 sm:grid-cols-2 items-start">
       {session.teammates.length > 0 && (
-        <div>
+        <div className="rounded-lg border border-white/6 bg-white/2 px-2.5 py-2">
           <div className="text-[10px] uppercase tracking-wide text-zinc-600 mb-0.5">
             Teammates ({session.teammates.length})
           </div>
@@ -131,7 +137,7 @@ export function SessionDetails({
       )}
 
       {session.prs.length > 0 && (
-        <div>
+        <div className="rounded-lg border border-white/6 bg-white/2 px-2.5 py-2">
           <div className="text-[10px] uppercase tracking-wide text-zinc-600 mb-0.5">
             Pull requests ({session.prs.length})
           </div>

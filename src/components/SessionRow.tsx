@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useSettings } from "@/hooks/useSettings";
 import { ClaudeSession, PrStatus, SessionStatus, statusLabels } from "@/lib/types";
-import { prLabel, PrStatusBadge } from "./PrStatusBadge";
 import { SessionDetails } from "./SessionDetails";
 
 const statusColors: Record<SessionStatus, { dot: string; text: string }> = {
@@ -33,6 +33,7 @@ export function SessionRow({
   onApproveReject?: (action: "approve" | "reject") => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const { editorAvailable } = useSettings();
   const colors = isStale ? { dot: "bg-zinc-500", text: "text-zinc-400" } : statusColors[displayStatus];
   const label = isStale ? "Stale" : statusLabels[displayStatus];
   const isWaiting = displayStatus === "waiting";
@@ -99,24 +100,28 @@ export function SessionRow({
           </div>
         </div>
 
-        {/* Git stats */}
-        {session.git && session.git.changedFiles > 0 && (
-          <div className="shrink-0 hidden md:flex items-center gap-1.5 text-[11px] font-(family-name:--font-geist-mono)">
-            {session.git.additions > 0 && <span className="text-emerald-500">+{session.git.additions}</span>}
-            {session.git.deletions > 0 && <span className="text-red-400">-{session.git.deletions}</span>}
-          </div>
-        )}
-
-        {/* PR status — one badge per PR the session owns */}
-        {session.prs.length > 0 && (
-          <div className="shrink-0 flex items-center gap-1.5">
-            {session.prs.map((url) => {
-              const pr = prStatuses?.[url];
-              return pr ? (
-                <PrStatusBadge key={url} pr={pr} label={session.prs.length > 1 ? prLabel(url) : undefined} />
-              ) : null;
-            })}
-          </div>
+        {editorAvailable && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              fetch("/api/actions/open", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "editor", path: session.workingDirectory, pid: session.pid }),
+              }).catch((err) => console.error("Open editor failed:", err));
+            }}
+            className="has-tooltip shrink-0 flex items-center justify-center w-7 h-7 rounded-md bg-white/4 hover:bg-white/10 border border-white/7 hover:border-white/15 text-zinc-500 hover:text-zinc-200 transition-all"
+            data-tip="Editor"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"
+              />
+            </svg>
+          </button>
         )}
 
         {/* Teammates + PRs, expandable beneath the row */}
@@ -185,6 +190,11 @@ export function SessionRow({
 
       {expanded && (
         <div className="pl-10 pr-3 pt-1.5">
+          {session.taskSummary?.description && (
+            <p className="text-[11px] text-zinc-500 mb-2 leading-relaxed line-clamp-3">
+              {session.taskSummary.description}
+            </p>
+          )}
           <SessionDetails session={session} prStatuses={prStatuses} />
         </div>
       )}

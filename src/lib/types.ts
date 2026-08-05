@@ -93,6 +93,8 @@ export interface PrStatus {
   checksDetail?: { total: number; passing: number; failing: number; pending: number };
   unresolvedThreads: number;
   commentCount: number;
+  additions: number;
+  deletions: number;
 }
 
 export interface SessionDetail extends ClaudeSession {

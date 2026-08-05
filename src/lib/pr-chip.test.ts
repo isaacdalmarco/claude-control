@@ -13,6 +13,8 @@ function pr(overrides: Partial<PrStatus>): PrStatus {
     mergeStateStatus: "CLEAN",
     unresolvedThreads: 0,
     commentCount: 0,
+    additions: 0,
+    deletions: 0,
     ...overrides,
   };
 }
