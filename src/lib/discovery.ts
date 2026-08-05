@@ -33,7 +33,7 @@ import {
   getTtysForPids,
   isOrphaned,
 } from "./terminal/detect";
-import { getTabTitles } from "./terminal/tab-titles";
+import { getTabTitles, TITLE_CAPABLE_APPS } from "./terminal/tab-titles";
 import { ClaudeSession, ConversationPreview, SessionDetail, Teammate } from "./types";
 
 async function findLatestJsonl(projectDir: string, excludePaths?: Set<string>): Promise<string | null> {
@@ -243,7 +243,15 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
     pidTty = ttyMap;
   }
 
-  const [tabTitles, teams] = await Promise.all([getTabTitles(), readTeams()]);
+  // The process tree already says which terminals are up — cheaper and quieter
+  // than asking System Events, which needs its own Automation grant.
+  const runningTerminals = new Set<string>();
+  for (const entry of processTree.values()) {
+    const name = entry.comm.split("/").pop() ?? entry.comm;
+    if ((TITLE_CAPABLE_APPS as readonly string[]).includes(name)) runningTerminals.add(name);
+  }
+
+  const [tabTitles, teams] = await Promise.all([getTabTitles(runningTerminals), readTeams()]);
 
   // Collect transcript paths claimed by hook events so fallback doesn't reuse them
   const claimedPaths = new Set<string>();
