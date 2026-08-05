@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { prStateChip } from "./pr-chip";
+import { aggregatePrChip, approvalMessage, prStateChip } from "./pr-chip";
 import { PrStatus } from "./types";
 
 function pr(overrides: Partial<PrStatus>): PrStatus {
@@ -15,9 +15,52 @@ function pr(overrides: Partial<PrStatus>): PrStatus {
     commentCount: 0,
     additions: 0,
     deletions: 0,
+    headRefName: null,
+    title: null,
     ...overrides,
   };
 }
+
+describe("aggregatePrChip", () => {
+  it("is Merged when every PR is", () => {
+    expect(aggregatePrChip([pr({ state: "MERGED" }), pr({ state: "MERGED" })])?.label).toBe("Merged");
+  });
+
+  it("is Open when anything is still open", () => {
+    expect(aggregatePrChip([pr({ state: "MERGED" }), pr({ state: "OPEN" })])?.label).toBe("Open");
+  });
+
+  it("skips closed PRs when picking the one to speak for the session", () => {
+    expect(aggregatePrChip([pr({ state: "CLOSED" }), pr({ state: "MERGED" })])?.label).toBe("Merged");
+  });
+
+  it("shows Closed only when the session has a single, closed PR", () => {
+    expect(aggregatePrChip([pr({ state: "CLOSED" })])?.label).toBe("Closed");
+    expect(aggregatePrChip([pr({ state: "CLOSED" }), pr({ state: "CLOSED" })])).toBeNull();
+  });
+
+  it("ignores PRs whose status has not loaded, and yields nothing when none have", () => {
+    expect(aggregatePrChip([null, pr({ state: "OPEN" })])?.label).toBe("Open");
+    expect(aggregatePrChip([null, undefined])).toBeNull();
+  });
+});
+
+describe("approvalMessage", () => {
+  it("drops the scheme and joins the title with a dash", () => {
+    expect(
+      approvalMessage(
+        "https://github.com/Authentic-Wallet/consolidated-dashboard/pull/752",
+        "fix(chat): scope call-event placement to payload.call_id",
+      ),
+    ).toBe(
+      "@eng github.com/Authentic-Wallet/consolidated-dashboard/pull/752 - fix(chat): scope call-event placement to payload.call_id",
+    );
+  });
+
+  it("omits the dash when the title is unknown", () => {
+    expect(approvalMessage("https://github.com/acme/api/pull/1", null)).toBe("@eng github.com/acme/api/pull/1");
+  });
+});
 
 describe("prStateChip", () => {
   it("reports lifecycle before review state", () => {

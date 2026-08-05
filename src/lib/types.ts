@@ -42,7 +42,7 @@ export interface Teammate {
   agentType: string;
   model: string | null;
   joinedAt: number | null;
-  /** Set while the teammate's process is alive. */
+  /** Matched from the process table so the lead can be killed along with its team. */
   pid: number | null;
 }
 
@@ -95,6 +95,8 @@ export interface PrStatus {
   commentCount: number;
   additions: number;
   deletions: number;
+  headRefName: string | null;
+  title: string | null;
 }
 
 export interface SessionDetail extends ClaudeSession {

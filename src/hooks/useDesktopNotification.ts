@@ -86,12 +86,13 @@ export function useDesktopNotification(alwaysNotify: boolean = false, onSelectSe
 
     const repo = getRepoLabel(session);
     const icon = getStatusIcon(newStatus);
-    const parts: string[] = [];
-    if (session.branch) parts.push(session.branch);
-    if (session.taskSummary?.title) parts.push(session.taskSummary.title);
-    const body = parts.join("\n") || undefined;
+    // Lead with what the dashboard shows — the session's own title, not its folder.
+    const heading = session.taskSummary?.title || repo;
+    const parts: string[] = [repo];
+    if (session.isWorktree && session.branch) parts.push(session.branch);
+    const body = parts.join(" · ");
 
-    const notification = new Notification(repo, {
+    const notification = new Notification(heading, {
       body,
       silent: true,
       icon,

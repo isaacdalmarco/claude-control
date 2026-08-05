@@ -13,6 +13,7 @@ import { usePrStatus } from "@/hooks/usePrStatus";
 import { useSessions } from "@/hooks/useSessions";
 import { useSettings } from "@/hooks/useSettings";
 import { flattenGroupedSessions } from "@/lib/group-sessions";
+import { applyOrder, loadOrder, reorder, saveOrder } from "@/lib/session-order";
 import { isSessionStale } from "@/lib/stale";
 import { SessionStatus, ViewMode } from "@/lib/types";
 
@@ -44,6 +45,7 @@ export default function Dashboard() {
   // Optimistic approve/reject state: sessionId → { action, timestamp }
   const [actedSessions, setActedSessions] = useState<Record<string, { action: "approve" | "reject"; at: number }>>({});
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [sessionOrder, setSessionOrder] = useState<string[]>(loadOrder);
 
   const handleApproveReject = useCallback((sessionId: string, action: "approve" | "reject") => {
     setActedSessions((prev) => ({ ...prev, [sessionId]: { action, at: Date.now() } }));
@@ -67,7 +69,7 @@ export default function Dashboard() {
   }, []);
 
   const handleSaveMeta = useCallback(
-    async (sessionId: string, updates: { title: string | null; description: string | null }) => {
+    async (sessionId: string, updates: { title?: string | null; description?: string | null }) => {
       try {
         await fetch(`/api/sessions/${sessionId}/meta`, {
           method: "PUT",
@@ -117,9 +119,23 @@ export default function Dashboard() {
     (count, s) => (isSessionStale(s.lastActivity, staleThresholdMinutes) ? count + 1 : count),
     0,
   );
+  const orderedSessions = applyOrder(sessions, sessionOrder);
   const visibleSessions = hideStale
-    ? sessions.filter((s) => !isSessionStale(s.lastActivity, staleThresholdMinutes))
-    : sessions;
+    ? orderedSessions.filter((s) => !isSessionStale(s.lastActivity, staleThresholdMinutes))
+    : orderedSessions;
+
+  const handleReorder = useCallback(
+    (draggedId: string, targetId: string) => {
+      const next = reorder(
+        orderedSessions.map((s) => s.id),
+        draggedId,
+        targetId,
+      );
+      setSessionOrder(next);
+      saveOrder(next);
+    },
+    [orderedSessions],
+  );
 
   const { selectedIndex, setSelectedIndex, selectedSession, actionFeedback } = useKeyboardShortcuts({
     sessions: visibleSessions,
@@ -345,6 +361,7 @@ export default function Dashboard() {
           onStartEdit={handleStartEdit}
           onSaveMeta={handleSaveMeta}
           onCancelEdit={handleCancelEdit}
+          onReorder={handleReorder}
         />
       )}
 

@@ -4,6 +4,7 @@ import { sendKeystrokeAction } from "@/lib/actions";
 import { groupSessions } from "@/lib/group-sessions";
 import { isSessionStale } from "@/lib/stale";
 import { ClaudeSession, PrStatus, ViewMode } from "@/lib/types";
+import { FlipList } from "./FlipList";
 import { SessionCard } from "./SessionCard";
 import { SessionRow } from "./SessionRow";
 
@@ -112,6 +113,7 @@ export function SessionGrid({
   onStartEdit,
   onSaveMeta,
   onCancelEdit,
+  onReorder,
 }: {
   sessions: ClaudeSession[];
   viewMode: ViewMode;
@@ -127,8 +129,9 @@ export function SessionGrid({
   onApproveReject?: (sessionId: string, action: "approve" | "reject") => void;
   editingSessionId?: string | null;
   onStartEdit?: (sessionId: string) => void;
-  onSaveMeta?: (sessionId: string, updates: { title: string | null; description: string | null }) => void;
+  onSaveMeta?: (sessionId: string, updates: { title?: string | null; description?: string | null }) => void;
   onCancelEdit?: () => void;
+  onReorder?: (draggedId: string, targetId: string) => void;
 }) {
   if (sessions.length === 0) {
     return (
@@ -236,13 +239,20 @@ export function SessionGrid({
               }
             : undefined
         }
+        editing={editingSessionId === session.id}
+        onStartEdit={onStartEdit ? () => onStartEdit(session.id) : undefined}
+        onSaveMeta={onSaveMeta ? (updates) => onSaveMeta(session.id, updates) : undefined}
+        onCancelEdit={onCancelEdit}
+        onReorder={onReorder}
       />
     );
   };
 
   const renderSessions = (items: ClaudeSession[]) =>
     viewMode === "list" ? (
-      <div className="space-y-1">{items.map(renderRow)}</div>
+      <FlipList order={items.map((s) => s.id).join(",")} className="space-y-1">
+        {items.map(renderRow)}
+      </FlipList>
     ) : (
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 items-start">{items.map(renderCard)}</div>
     );
