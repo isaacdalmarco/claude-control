@@ -7,7 +7,9 @@ const execFileAsync = promisify(execFile);
 
 // Cache: prUrl → { data, timestamp }
 const cache = new Map<string, { data: PrStatus; ts: number }>();
-const CACHE_TTL_MS = 30_000;
+// Shorter than the client's poll, or a refresh can be served a reply that is
+// already a poll old and the badge lags CI by a minute.
+const CACHE_TTL_MS = 15_000;
 
 function parsePrNumber(prUrl: string): { owner: string; repo: string; number: number } | null {
   const match = prUrl.match(/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/);

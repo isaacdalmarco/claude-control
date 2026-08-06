@@ -18,7 +18,10 @@ export function useSessions() {
     fetcher,
     {
       refreshInterval: POLL_INTERVAL_MS,
-      revalidateOnFocus: false,
+      // Notifications exist for when the window is not in front, which is also
+      // when SWR would otherwise stop polling.
+      refreshWhenHidden: true,
+      revalidateOnFocus: true,
       keepPreviousData: true,
     },
   );

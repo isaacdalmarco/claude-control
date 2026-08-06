@@ -1,7 +1,7 @@
 import useSWR from "swr";
 import { ClaudeSession, PrStatus } from "@/lib/types";
 
-const PR_POLL_MS = 30_000;
+const PR_POLL_MS = 20_000;
 
 /** Every PR across all sessions, deduped, each paired with a cwd `gh` can run in. */
 function prTargets(sessions: ClaudeSession[]): { prUrls: string[]; cwds: string[] } {
@@ -36,7 +36,7 @@ export function usePrStatus(sessions: ClaudeSession[]) {
   const { data } = useSWR<Record<string, PrStatus | null>>(
     prUrls ? `pr-status:${prUrls}` : null,
     () => fetchPrStatuses(sessions),
-    { refreshInterval: PR_POLL_MS, revalidateOnFocus: false },
+    { refreshInterval: PR_POLL_MS, refreshWhenHidden: true, revalidateOnFocus: true },
   );
 
   return data ?? {};
