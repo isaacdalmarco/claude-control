@@ -69,3 +69,22 @@ export async function getOwnedPrUrls(jsonlPath: string): Promise<string[]> {
 export function resetPrScanCache(): void {
   scans.clear();
 }
+
+/**
+ * Whether the checked-out branch's PR belongs to this session.
+ *
+ * It does when the session owns the checkout — its own worktree, or a repo no
+ * other session is sitting in. It does not when several sessions share a
+ * directory: they all resolve to one PR that describes none of them.
+ */
+export function shouldUseBranchPr(options: {
+  branch: string | null;
+  ownsTranscriptPrs: boolean;
+  isWorktree: boolean;
+  sharesWorkingDirectory: boolean;
+}): boolean {
+  const { branch, ownsTranscriptPrs, isWorktree, sharesWorkingDirectory } = options;
+  if (ownsTranscriptPrs) return false;
+  if (!branch || branch === "main" || branch === "master") return false;
+  return isWorktree || !sharesWorkingDirectory;
+}
