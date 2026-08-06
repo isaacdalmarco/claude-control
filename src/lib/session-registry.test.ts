@@ -19,6 +19,7 @@ describe("parseRegistryEntry", () => {
       cwd: "/Users/isaac/workspace/command_center",
       name: "data structure review eng-1999",
       kind: "bg",
+      status: "shell",
     });
   });
 
@@ -32,8 +33,8 @@ describe("parseRegistryEntry", () => {
     expect(parseRegistryEntry('{"pid":8571')).toBeNull();
   });
 
-  it("tolerates a missing name or kind", () => {
+  it("tolerates a missing name, kind or status", () => {
     const partial = parseRegistryEntry(JSON.stringify({ pid: 1, sessionId: "x", cwd: "/tmp" }));
-    expect(partial).toEqual({ pid: 1, sessionId: "x", cwd: "/tmp", name: null, kind: null });
+    expect(partial).toEqual({ pid: 1, sessionId: "x", cwd: "/tmp", name: null, kind: null, status: null });
   });
 });

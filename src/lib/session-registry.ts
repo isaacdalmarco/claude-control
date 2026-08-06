@@ -12,6 +12,8 @@ export interface RegistrySession {
   name: string | null;
   /** "interactive" for a terminal session, "bg" for a dispatched background one. */
   kind: string | null;
+  /** Claude Code's own view: "busy" while a turn is in flight, "idle" at the prompt. */
+  status: string | null;
 }
 
 export function parseRegistryEntry(raw: string): RegistrySession | null {
@@ -26,6 +28,7 @@ export function parseRegistryEntry(raw: string): RegistrySession | null {
       cwd: entry.cwd,
       name: typeof entry.name === "string" ? entry.name : null,
       kind: typeof entry.kind === "string" ? entry.kind : null,
+      status: typeof entry.status === "string" ? entry.status : null,
     };
   } catch {
     return null;
