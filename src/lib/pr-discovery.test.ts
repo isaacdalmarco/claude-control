@@ -1,5 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { extractOwnedPrUrls } from "./pr-discovery";
+import { extractOwnedPrUrls, shouldUseBranchPr } from "./pr-discovery";
+
+describe("shouldUseBranchPr", () => {
+  const base = { branch: "eng-1", ownsTranscriptPrs: false, isWorktree: false, sharesWorkingDirectory: false };
+
+  it("uses the branch PR when the session has the repo to itself", () => {
+    expect(shouldUseBranchPr(base)).toBe(true);
+  });
+
+  it("uses it in a worktree even alongside other sessions", () => {
+    expect(shouldUseBranchPr({ ...base, isWorktree: true, sharesWorkingDirectory: true })).toBe(true);
+  });
+
+  it("refuses when sessions share a checkout — the PR describes none of them", () => {
+    expect(shouldUseBranchPr({ ...base, sharesWorkingDirectory: true })).toBe(false);
+  });
+
+  it("prefers the PRs the transcript owns", () => {
+    expect(shouldUseBranchPr({ ...base, ownsTranscriptPrs: true })).toBe(false);
+  });
+
+  it("ignores trunk branches and missing ones", () => {
+    expect(shouldUseBranchPr({ ...base, branch: "main" })).toBe(false);
+    expect(shouldUseBranchPr({ ...base, branch: "master" })).toBe(false);
+    expect(shouldUseBranchPr({ ...base, branch: null })).toBe(false);
+  });
+});
 
 describe("extractOwnedPrUrls", () => {
   it("picks up PRs the session created", () => {

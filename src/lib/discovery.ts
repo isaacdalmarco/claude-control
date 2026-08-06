@@ -4,7 +4,7 @@ import { ORPHAN_CHECK_INTERVAL_MS } from "./constants";
 import { getGitDiff, getGitSummary, getMainWorktreePath, getPrUrl } from "./git-info";
 import { type HookStatus, readAllHookStatuses } from "./hooks-reader";
 import { repoNameFromPath, workingDirToProjectDir } from "./paths";
-import { getOwnedPrUrls } from "./pr-discovery";
+import { getOwnedPrUrls, shouldUseBranchPr } from "./pr-discovery";
 import { getAllProcessInfos, ProcessInfo } from "./process-utils";
 import { loadSessionMeta } from "./session-meta";
 import {
@@ -79,6 +79,7 @@ async function buildSession(
   tmuxSession: string | null,
   tabTitle: string | null,
   teams: Map<string, Teammate[]>,
+  sharesWorkingDirectory: boolean,
 ): Promise<ClaudeSession | null> {
   if (!info.workingDirectory) return null;
 
@@ -140,18 +141,21 @@ async function buildSession(
   }
 
   const resolvedBranch = git?.branch ?? branch;
-
-  // PRs the session itself created or was told to shepherd identify it; the
-  // checked-out branch's PR does not — every session sharing a repo resolves to
-  // the same one. Fall back to the branch PR only when the transcript has none.
-  const ownedPrs = jsonlPath ? await getOwnedPrUrls(jsonlPath) : [];
-  const skipPrLookup =
-    ownedPrs.length > 0 || !resolvedBranch || resolvedBranch === "main" || resolvedBranch === "master";
-  const branchPr = skipPrLookup ? null : await getPrUrl(info.workingDirectory, resolvedBranch);
-  const prs = ownedPrs.length > 0 ? ownedPrs : branchPr ? [branchPr] : [];
-
   const isWorktree = mainWorktreePath !== null && mainWorktreePath !== info.workingDirectory;
   const parentRepo = isWorktree ? mainWorktreePath : null;
+
+  // PRs the session created or was told to shepherd identify it. The checked-out
+  // branch's PR only does when the session owns that checkout.
+  const ownedPrs = jsonlPath ? await getOwnedPrUrls(jsonlPath) : [];
+  const branchPr = shouldUseBranchPr({
+    branch: resolvedBranch,
+    ownsTranscriptPrs: ownedPrs.length > 0,
+    isWorktree,
+    sharesWorkingDirectory,
+  })
+    ? await getPrUrl(info.workingDirectory, resolvedBranch!)
+    : null;
+  const prs = ownedPrs.length > 0 ? ownedPrs : branchPr ? [branchPr] : [];
 
   // Hooks provide authoritative working/idle/finished status.
   // "Waiting" is detected by the heuristic classifier via JSONL (hasPendingToolUse +
@@ -253,6 +257,12 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
     }
   }
 
+  const cwdCounts = new Map<string, number>();
+  for (const info of processInfos) {
+    if (!info.workingDirectory) continue;
+    cwdCounts.set(info.workingDirectory, (cwdCounts.get(info.workingDirectory) ?? 0) + 1);
+  }
+
   const results = await Promise.all(
     processInfos
       .filter((info) => info.workingDirectory !== null)
@@ -265,6 +275,7 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
           pidTmuxSession.get(info.pid) ?? null,
           tabTitles.get(pidTty.get(info.pid) ?? "") ?? null,
           teams,
+          (cwdCounts.get(info.workingDirectory ?? "") ?? 0) > 1,
         ),
       ),
   );
