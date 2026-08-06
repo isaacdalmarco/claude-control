@@ -5,6 +5,7 @@ import { getGitDiff, getGitSummary, getMainWorktreePath, getPrUrl } from "./git-
 import { type HookStatus, readAllHookStatuses } from "./hooks-reader";
 import { repoNameFromPath, workingDirToProjectDir } from "./paths";
 import { getOwnedPrUrls, shouldUseBranchPr } from "./pr-discovery";
+import { readSessionRegistry, RegistrySession } from "./session-registry";
 import { getAllProcessInfos, ProcessInfo } from "./process-utils";
 import { loadSessionMeta } from "./session-meta";
 import {
@@ -80,13 +81,14 @@ async function buildSession(
   tabTitle: string | null,
   teams: Map<string, Teammate[]>,
   sharesWorkingDirectory: boolean,
+  registered: RegistrySession | undefined,
 ): Promise<ClaudeSession | null> {
   if (!info.workingDirectory) return null;
 
   const projectDir = workingDirToProjectDir(info.workingDirectory);
   const jsonlPath = hookStatus?.transcriptPath ?? (await findLatestJsonl(projectDir, claimedPaths));
 
-  let sessionId = `pid-${info.pid}`;
+  let sessionId = registered?.sessionId ?? `pid-${info.pid}`;
   let startedAt: string | null = null;
   let branch: string | null = null;
   let preview: ConversationPreview = {
@@ -114,7 +116,7 @@ async function buildSession(
   if (jsonlResult) {
     const [lines, headLines, jsonlMtime] = jsonlResult;
     mtime = jsonlMtime;
-    sessionId = hookStatus?.sessionId ?? extractSessionId(lines) ?? sessionId;
+    sessionId = hookStatus?.sessionId ?? registered?.sessionId ?? extractSessionId(lines) ?? sessionId;
     startedAt = extractStartedAt(lines);
     branch = extractBranch(lines);
     preview = extractPreview(lines);
@@ -130,9 +132,10 @@ async function buildSession(
 
   // Claude Code retitles the terminal tab as the task evolves — a better label
   // than the opening prompt. Ticket metadata still comes from the transcript.
-  if (tabTitle) {
+  const backgroundName = registered && registered.kind !== "interactive" ? registered.name : null;
+  if (tabTitle || backgroundName) {
     taskSummary = {
-      title: tabTitle,
+      title: (tabTitle ?? backgroundName)!,
       description: taskSummary?.description ?? null,
       source: "terminal",
       ticketId: taskSummary?.ticketId ?? null,
@@ -210,8 +213,15 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
     readAllHookStatuses(),
     loadSessionMeta(),
   ]);
-  const pids = findClaudePidsFromTree(processTree);
+  // The process table misses background sessions ("claude bg-spare") entirely;
+  // the registry is what `claude agents` reads, so union the two.
+  const registry = await readSessionRegistry((pid) => processTree.has(pid));
+  const pids = Array.from(new Set([...findClaudePidsFromTree(processTree), ...registry.keys()]));
   const processInfos = await getAllProcessInfos(pids, processTree);
+
+  for (const info of processInfos) {
+    if (!info.workingDirectory) info.workingDirectory = registry.get(info.pid)?.cwd ?? null;
+  }
 
   // Clean up terminal cache entries for dead PIDs
   const activePids = new Set(pids);
@@ -276,6 +286,7 @@ export async function discoverSessions(): Promise<ClaudeSession[]> {
           tabTitles.get(pidTty.get(info.pid) ?? "") ?? null,
           teams,
           (cwdCounts.get(info.workingDirectory ?? "") ?? 0) > 1,
+          registry.get(info.pid),
         ),
       ),
   );
