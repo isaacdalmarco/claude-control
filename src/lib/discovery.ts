@@ -166,7 +166,7 @@ async function buildSession(
   // If the hook status is available (and not null, meaning PermissionRequest was ignored),
   // use it; otherwise fall back to the heuristic classifier.
   const hookDerivedStatus = hookStatus?.status ?? null;
-  const status: ClaudeSession["status"] =
+  let status: ClaudeSession["status"] =
     hookDerivedStatus ??
     classifyStatus({
       pid: info.pid,
@@ -176,6 +176,13 @@ async function buildSession(
       isAskingForInput: askingForInput,
       hasPendingToolUse: pendingToolUse,
     });
+
+  // CPU and transcript mtime both go quiet while a turn waits on the API, so a
+  // running session reads idle between writes. Claude Code tracks this itself —
+  // it is what `claude agents` shows — so let it correct a false idle. Only that:
+  // waiting and errored still come from the transcript, which the registry has no
+  // notion of.
+  if (status === "idle" && registered?.status === "busy") status = "working";
 
   // Recent user activity overrides orphan detection — if the session had
   // input within the last 60s it's clearly not abandoned.
