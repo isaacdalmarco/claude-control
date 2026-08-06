@@ -10,7 +10,9 @@ const cache = new Map<string, { data: PrStatus; ts: number }>();
 const CACHE_TTL_MS = 30_000;
 
 function parsePrNumber(prUrl: string): { owner: string; repo: string; number: number } | null {
-  const match = prUrl.match(/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/);
+  // Owner and repo are interpolated into a GraphQL query string below, so the
+  // character class stays narrow — [^/] would let a crafted URL close the string.
+  const match = prUrl.match(/github\.com\/([\w.-]+)\/([\w.-]+)\/pull\/(\d+)/);
   if (!match) return null;
   return { owner: match[1], repo: match[2], number: parseInt(match[3]) };
 }
