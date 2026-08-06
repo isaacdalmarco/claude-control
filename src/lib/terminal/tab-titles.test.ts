@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { cleanTabTitle, parseTabTitles } from "./tab-titles";
+import { buildTitleScript, cleanTabTitle, parseTabTitles } from "./tab-titles";
+
+describe("buildTitleScript", () => {
+  it("asks nothing when no title-capable terminal is running", () => {
+    expect(buildTitleScript(new Set())).toBeNull();
+    expect(buildTitleScript(new Set(["ghostty", "kitty", "Warp"]))).toBeNull();
+  });
+
+  it("only addresses the terminals that are up", () => {
+    const iterm = buildTitleScript(new Set(["iTerm2"]));
+    expect(iterm).toContain('tell application "iTerm2"');
+    expect(iterm).not.toContain('tell application "Terminal"');
+
+    const both = buildTitleScript(new Set(["iTerm2", "Terminal", "ghostty"]));
+    expect(both).toContain('tell application "iTerm2"');
+    expect(both).toContain('tell application "Terminal"');
+  });
+});
 
 describe("cleanTabTitle", () => {
   it("strips the Claude Code status glyph", () => {
